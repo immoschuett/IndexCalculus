@@ -12,7 +12,7 @@ using Hecke,Nemo,Revise
 ENV["JULIA_DEBUG"] = "all" # enable debugging
 revise()
 ##
-function primitive_elem(K::Nemo.GaloisField,first::Bool)
+function primitive_elem(K::Nemo.GaloisField,first::Bool) #TODO implement compatible for Abstract field or Nemo.GaloisfmpzField
     #returns a (the first) generator alpha of K° s.t. lift(alpha) is prime in ZZ
     p = length(K)
     Fact = divisors(fmpz(p-1))[1:end-1]
@@ -81,7 +81,7 @@ function Sieve(K, qlimit, climit, ratio)
                         prod = (J + (c1 + c2)*H + c1*c2) % p
                         nextp = nextqpow
                         while rem(prod,nextp) == 0
-                            sieve[c2] += logq
+                            sieve[Int(c2)] += logq
                             nextp = nextp*q
                         end
                     end
@@ -161,11 +161,13 @@ end
 
 
 
-K,K2,K3 = Sieve(GF(103),35,28,1.1)
-check_relation_mat(GF(103),K,K3)
+K,K2,K3 = Sieve(GF(107),35,28,1.1)
 
 #Hecke.subset
 #flog,clog,iroot
 
 #badge smoothneth test -> glatttest (factorisieren)
 #psi lower, psi upper in Hecke (Schranken), rho-funktion (dickmann_rho)
+
+G = GF(1000000007)
+A,B,C = Sieve(G, 250, 80, 1.1)
