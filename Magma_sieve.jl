@@ -222,7 +222,3 @@ function Sieve(K, qlimit, climit, ratio)
 end
 
 K = Sieve(GF(103),35,27,1.1)
-println(K[3])
-
-# returns a 30x69 matrix
-# in FB still are redundant primes... ?!
