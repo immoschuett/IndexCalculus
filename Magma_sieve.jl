@@ -221,4 +221,23 @@ function Sieve(K, qlimit, climit, ratio)
     return A,FBs,FB
 end
 
-K = Sieve(GF(103),35,27,1.1)
+function check_relations(A,FBs,FB)
+    #getindex(A::SMat, i::Int, j::Int)
+    p = 103
+    for k = 1:nrows(A)
+        prod = 1
+        for i = 1:length(FB)
+            ex = getindex(A,k,i)
+            if ex < 0
+                prod *= invmod(FB[i],fmpz(p))^abs(ex)
+            else
+                prod  *= FB[i]^getindex(A,k,i)
+            end
+        end
+        prod % p  == 1 || (@error "relations incoorect")
+    end
+    return true
+end
+
+K,K2,K3 = Sieve(GF(103),35,27,1.1)
+check_relations(K,K2,K3)
