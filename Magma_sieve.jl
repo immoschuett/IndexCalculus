@@ -1,115 +1,27 @@
 
 ##
-Fachpraktikum = UInt32(1) #v0x00.000.001
+Fachpraktikum = UInt32(1) #v0x00.000.002
 ##
 
 #WARNING all implementations are quick and naive (slow but mostly correct i hope)
 # improvement will be done later
 #TODO insert abstract type control in all functions
 ##
-using Combinatorics,Hecke,Revise,Nemo
+
+using Hecke,Nemo,Revise
+ENV["JULIA_DEBUG"] = "all" # enable debugging
 revise()
 ##
-
-function erat(b::Int)                                                             #TODO output should be fmpz
-    #basic Sieve of Erastosthenes
-    L1 = [2] # only even prime
-    L2 = [i for i in 3:2:b]  # only get uneven numbers  -> use O(n/2) memory
-    while length(L2) != 0
-        nextp = L2[1]
-        L1 = vcat(L1,[nextp])   #add p according to Erastosthenes
-        for i in L2
-            if i%nextp == 0
-                k = findfirst(isequal(i),L2)
-                deleteat!(L2,k)
-            end
+function primitive_elem(K::Nemo.GaloisField,first::Bool)
+    #returns a (the first) generator alpha of K° s.t. lift(alpha) is prime in ZZ
+    p = length(K)
+    Fact = divisors(fmpz(p-1))[1:end-1]
+    while true # alpha exists
+        for y in K
+            if !first y = rand(K) end
+            A = [y^exp for exp in Fact]
+            one(K) in A  || ((isprime(lift(y)) ? (return y) : nothing))
         end
-    end
-    return L1
-end
-
-function issmoth_v(n::fmpz,B::Array)
-    # for p in B do. n = n/p as long as possible.
-    # remaining  n is 1 -> true
-    # if remaining n != 1  -> false
-    r = deepcopy(n)
-    r != 0 || error("zero_error")
-    for p in B
-        while r%p == 0
-            r = divexact(r,p)
-        end
-        r != 1 || return true
-    end
-    return false
-end
-
-function pm1(n,B)
-    # pollard p-1 methode
-    a = 2  #TODO randomisieren
-    for p in my_primesupto(Int(B))
-        prod = p
-        while prod < B
-            a = powermod(a,p,n)
-            prod  = prod * p # such that p^i is b smooth
-        end
-        g = gcd(a-1,n)
-        if 1 < gcd(a-1,n) < n
-            return (g,true)
-        end
-    end
-    return (0,false)
-    #error("failed pollard p-1 ")
-end
-
-function prho(n,f)
-    (x,z,d) = (1,1,1) #TODO randomisieren
-    while true
-        x = evaluate(f,x)
-        z = evaluate(f,evaluate(f,z))
-        d = gcd(lift(z-x),n)
-        d != n || return (0,false)
-        abs(d) == 1 || return (d,true)
-    end
-end
-
-function prhofactor(n)                                                            #TODO check this function with prho again
-    # this should give all prime factors.           #TODO vielfachheiten der Primzahlen
-    Zy,y = PolynomialRing(ResidueRing(ZZ,n),"y")
-    f = y^2 + 1
-    f1,bool = prho(n,f)    # if bool == false n should be prime
-    bool || return [n]
-    f2 = divexact(n,f1)
-    return vcat(prhofactor(f1),prhofactor(f2))
-end
-
-function alldivisors(n)
-    pdivisors = prhofactor(n)
-    A = [1]
-    for vector in powerset(pdivisors,1)# gives iterator and filter emptyset
-        factor = prod(vector)
-        (factor in A) || (A = vcat(A,factor))
-    end
-    return A
-end
-
-function primitive_elem(K,first)
-    #returns a primitive element s.t. lift(a) is prime in Z
-    #additional first==true return first primitive element  prime in Z (ordered by its lifting in Z)
-    p = Int(length(K))
-    Fact = alldivisors(p-1)[1:end-1] # factor #K-1 = p-1 without p-1
-    if first
-        while true
-            for y in K
-                A = [y^exp for exp in Fact]
-                one(K) in A  || ((isprime(lift(y)) ? (return y) : nothing))
-            end
-        end
-    end
-    # random primitive elem
-    while true
-        y = rand(K)
-        A = [y^exp for exp in Fact]
-        one(K) in A  || ((isprime(lift(y)) ? (return y) : nothing))
     end
 end
 
@@ -131,14 +43,15 @@ function Sieve(K, qlimit, climit, ratio)
     J = H^2 - p
 
     # factorbase up to qlimit
-    fb_primes = erat(qlimit)
-                                                                                    # TODO faster way here
+    fb_primes = [i for i in PrimesSet(1,qlimit)]
     log2 = log(2.0);
     logqs = [log(q)/log2 for q in fb_primes] #real logarithms for sieve
 
     alpha = primitive_elem(K,true) # first primitive elem, prime in Z i.e small
     FB = vcat([lift(alpha)],deleteat!(fb_primes,findfirst(isequal(lift(alpha)),fb_primes))) # tauschen a[1] = a[2] , a[2] = [1]
-    FBs = FactorBase(FB)
+    FBs = deepcopy(FactorBase(FB))
+    l = length(FB)
+    Indx = Dict(zip(FB,[i for i=1:length(FB)])) #Index in a dictionary
     #FB = Factorbase([fmpz(i) for i in FB)
     #fb_primes is factorbase with lift of alpha on first place
     #A = zeros(Int64,length(fb_primes),length(fb_primes))
@@ -162,7 +75,7 @@ function Sieve(K, qlimit, climit, ratio)
                 while c2 < c1   #c2>=c1 to remove redundant relations of (c1,c2) tuples, just increase c2
                     c2+=qpow
                 end
-                while c2 < length(sieve)
+                while c2 <= length(sieve)
                     sieve[Int(c2)] += logq
                     if nextqpow > qlimit
                         prod = (J + (c1 + c2)*H + c1*c2) % p
@@ -189,41 +102,48 @@ function Sieve(K, qlimit, climit, ratio)
                 if issmooth(FBs,fmpz(n))
                     dict_factors = Hecke.factor(FBs,fmpz(n))
                     #Include each H + c_i in extended factor basis.
-                    (H + c1) in FB || (FB = vcat(FB,[H + c1])) #push!(FB,wert)
-                    (H + c2) in FB || (FB = vcat(FB,[H + c2]))
+                    r = length(Indx)+1
+                    if !((H + c1) in keys(Indx))
+                        push!(FB,H + c1)
+                        push!(Indx,(H+c1) => r)
+                    end#(FB = vcat(FB,[H + c1])) #push!(FB,wert)
+                    r = length(Indx)+1
+                    if !((H + c2) in keys(Indx))
+                        push!(FB,H + c2)
+                        push!(Indx,(H+c2) => r)
+                    end#(FB = vcat(FB,[H + c2]))
                     #Include relation (H + c1)*(H + c2) = fact.
-                    row = nrows(A) + 1 # insert new relation (new row)to sparse_matrix
-                    v = values(dict_factors)
-                    cnt = 0
+                    #row = nrows(A) + 1 # insert new relation (new row)to sparse_matrix
                     J1 = Vector{Int}([])
-                    V = []
-                    for entry in dict_factors # for (a,b) in
-                        cnt+=1
-                        (entry[2] == 0) || ((J1,V)=(vcat(J1,[cnt]),vcat(V,entry[2]))) #Indices (Hashfunktion hier im Dictionary suche in logzeit) mit dictionary positionen speichern.  Korrektheit prüfen.
+                    V = Vector{fmpz}([])
+                    for (prime,power) in dict_factors
+                        if !(power == 0)
+                            push!(J1,Indx[prime])
+                            push!(V,power)
+                        end
                     end
                     if c1 == c2
-                        h = findfirst(isequal(H + c1),FB) #lineare Suche...
-                        (J1,V)=(vcat(J1,[h]),vcat(V,fmpz(-2)))
+                         push!(J1,Indx[H+c1])
+                         push!(V,fmpz(-2))
                     else
-                        h = findfirst(isequal(H + c1),FB)
-                        (J1,V)=(vcat(J1,[h]),vcat(V,fmpz(-1)))
-                        h = findfirst(isequal(H + c2),FB)
-                        (J1,V)=(vcat(J1,[h]),vcat(V,fmpz(-1)))
+                         push!(J1,Indx[H+c1])
+                         push!(J1,Indx[H+c2])
+                         push!(V,fmpz(-1))
+                         push!(V,fmpz(-1))
                     end
-                    #println(J1,V)
                     push!(A,sparse_row(ZZ, J1, V))
-                    #setindex!(A, new_sparserow, row) #TODO doesnt work as wanted.
                 end
             end
             rel += relinc
         end
     end
+    @debug @assert check_relation_mat(K,A,FB) "Relation Matrix wrong"
     return A,FBs,FB
 end
 
-function check_relations(A,FBs,FB)
+function check_relation_mat(K,A,FB)
     #getindex(A::SMat, i::Int, j::Int)
-    p = 103
+    p = Int(length(K))
     for k = 1:nrows(A)
         prod = 1
         for i = 1:length(FB)
@@ -231,29 +151,21 @@ function check_relations(A,FBs,FB)
             if ex < 0
                 prod *= invmod(FB[i],fmpz(p))^abs(ex)
             else
-                prod  *= FB[i]^getindex(A,k,i)
+                prod  *= FB[i]^ex
             end
         end
-        prod % p  == 1 || (@error "relation incoorect")
+        if !(prod % p  == 1)  return false end
     end
     return true
 end
 
-K,K2,K3 = Sieve(GF(103),35,27,1.1)
-check_relations(K,K2,K3)
 
-#Befehl der Exponenten in Matrix liefert aus einer Faktorbasis:
 
-Array(K)
+K,K2,K3 = Sieve(GF(103),35,28,1.1)
+check_relation_mat(GF(103),K,K3)
 
 #Hecke.subset
 #flog,clog,iroot
 
 #badge smoothneth test -> glatttest (factorisieren)
-
 #psi lower, psi upper in Hecke (Schranken), rho-funktion (dickmann_rho)
-
-#insert asser
-#@assert true
-# mit globaler variable asserts ausschalten
-# debuggingstages (if deb = 1, deb = 2...)
