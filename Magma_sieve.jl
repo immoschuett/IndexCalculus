@@ -136,7 +136,7 @@ function Sieve(K, qlimit, climit, ratio)
     log2 = log(2.0);
     logqs = [log(q)/log2 for q in fb_primes] #real logarithms for sieve
 
-    alpha = primitive_elem(GF(103),true) # first primitive elem, prime in Z i.e small
+    alpha = primitive_elem(K,true) # first primitive elem, prime in Z i.e small
     FB = vcat([lift(alpha)],deleteat!(fb_primes,findfirst(isequal(lift(alpha)),fb_primes)))
     FBs = FactorBase(FB)
     #FB = Factorbase([fmpz(i) for i in FB)
