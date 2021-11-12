@@ -186,11 +186,11 @@ function Sieve(K, qlimit, climit, ratio)
             if abs(sieve[c2] - floor(log(n)/log2)) < 1
                 # TODO insert default factorbase algorithm
                 #FBs = FactorBase(FB) #generate Factorbas from updated FBs with new c_i´s
-                if issmooth(FBs,fmpz(n)) # WARNING && #fact eq 0 or fact[#fact][1] lt qlimit) then
-
+                if issmooth(FBs,fmpz(n))
                     dict_factors = Hecke.factor(FBs,fmpz(n))
                     #Include each H + c_i in extended factor basis.
-                    FB = vcat(FB,[H + c1,H + c2])
+                    (H + c1) in FB || (FB = vcat(FB,[H + c1]))
+                    (H + c2) in FB || (FB = vcat(FB,[H + c2]))
                     #Include relation (H + c1)*(H + c2) = fact.
                     row = nrows(A) + 1 # insert new relation (new row)to sparse_matrix
                     v = values(dict_factors)
@@ -218,11 +218,11 @@ function Sieve(K, qlimit, climit, ratio)
             rel += relinc
         end
     end
-    return A,FBs,FB #Warning returns all sparserows and a 0x0 sparse matrix:C
+    return A,FBs,FB
 end
 
 K = Sieve(GF(103),35,27,1.1)
+println(K[3])
 
-Vector{Int}([])
-
-println(K[1])
+# returns a 30x69 matrix
+# in FB still are redundant primes... ?!
