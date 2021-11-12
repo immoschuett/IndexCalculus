@@ -45,7 +45,7 @@ end
 
 function pm1(n,B)
     # pollard p-1 methode
-    a = 2
+    a = 2  #TODO randomisieren
     for p in my_primesupto(Int(B))
         prod = p
         while prod < B
@@ -62,7 +62,7 @@ function pm1(n,B)
 end
 
 function prho(n,f)
-    (x,z,d) = (1,1,1)
+    (x,z,d) = (1,1,1) #TODO randomisieren
     while true
         x = evaluate(f,x)
         z = evaluate(f,evaluate(f,z))
@@ -137,7 +137,7 @@ function Sieve(K, qlimit, climit, ratio)
     logqs = [log(q)/log2 for q in fb_primes] #real logarithms for sieve
 
     alpha = primitive_elem(K,true) # first primitive elem, prime in Z i.e small
-    FB = vcat([lift(alpha)],deleteat!(fb_primes,findfirst(isequal(lift(alpha)),fb_primes)))
+    FB = vcat([lift(alpha)],deleteat!(fb_primes,findfirst(isequal(lift(alpha)),fb_primes))) # tauschen a[1] = a[2] , a[2] = [1]
     FBs = FactorBase(FB)
     #FB = Factorbase([fmpz(i) for i in FB)
     #fb_primes is factorbase with lift of alpha on first place
@@ -189,7 +189,7 @@ function Sieve(K, qlimit, climit, ratio)
                 if issmooth(FBs,fmpz(n))
                     dict_factors = Hecke.factor(FBs,fmpz(n))
                     #Include each H + c_i in extended factor basis.
-                    (H + c1) in FB || (FB = vcat(FB,[H + c1]))
+                    (H + c1) in FB || (FB = vcat(FB,[H + c1])) #push!(FB,wert)
                     (H + c2) in FB || (FB = vcat(FB,[H + c2]))
                     #Include relation (H + c1)*(H + c2) = fact.
                     row = nrows(A) + 1 # insert new relation (new row)to sparse_matrix
@@ -197,12 +197,12 @@ function Sieve(K, qlimit, climit, ratio)
                     cnt = 0
                     J1 = Vector{Int}([])
                     V = []
-                    for entry in dict_factors
+                    for entry in dict_factors # for (a,b) in
                         cnt+=1
-                        (entry[2] == 0) || ((J1,V)=(vcat(J1,[cnt]),vcat(V,entry[2])))
+                        (entry[2] == 0) || ((J1,V)=(vcat(J1,[cnt]),vcat(V,entry[2]))) #Indices (Hashfunktion hier im Dictionary suche in logzeit) mit dictionary positionen speichern.  Korrektheit prüfen.
                     end
                     if c1 == c2
-                        h = findfirst(isequal(H + c1),FB)
+                        h = findfirst(isequal(H + c1),FB) #lineare Suche...
                         (J1,V)=(vcat(J1,[h]),vcat(V,fmpz(-2)))
                     else
                         h = findfirst(isequal(H + c1),FB)
@@ -234,10 +234,26 @@ function check_relations(A,FBs,FB)
                 prod  *= FB[i]^getindex(A,k,i)
             end
         end
-        prod % p  == 1 || (@error "relations incoorect")
+        prod % p  == 1 || (@error "relation incoorect")
     end
     return true
 end
 
 K,K2,K3 = Sieve(GF(103),35,27,1.1)
 check_relations(K,K2,K3)
+
+#Befehl der Exponenten in Matrix liefert aus einer Faktorbasis:
+
+Array(K)
+
+#Hecke.subset
+#flog,clog,iroot
+
+#badge smoothneth test -> glatttest (factorisieren)
+
+#psi lower, psi upper in Hecke (Schranken), rho-funktion (dickmann_rho)
+
+#insert asser
+#@assert true
+# mit globaler variable asserts ausschalten
+# debuggingstages (if deb = 1, deb = 2...)
