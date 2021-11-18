@@ -1,6 +1,6 @@
 
 ##
-Fachpraktikum = UInt32(1) #v0x00.000.002
+Fachpraktikum = UInt32(2) #v0x00.000.002
 ##
 
 #WARNING all implementations are quick and naive (slow but mostly correct i hope)
@@ -12,7 +12,23 @@ using Hecke,Nemo,Revise
 ENV["JULIA_DEBUG"] = "all" # enable debugging
 revise()
 ##
-function primitive_elem(K::Nemo.GaloisField,first::Bool) #TODO implement compatible for Abstract field or Nemo.GaloisfmpzField
+
+abstract type DLP end
+
+mutable struct FField<:DLP
+	K::FinField
+	a::FinFieldElem #primitive element
+end
+mutable struct Sparam<:DLP
+	qlimit::Int64
+	climit::Int64
+	ratio::Float64
+	inc::Tuple{Int64, Int64} #for increasing of Sparam
+end
+
+
+##
+function primitive_elem(K::FinField,first::Bool) #TODO implement compatible for Abstract field or Nemo.GaloisfmpzField
     #returns a (the first) generator alpha of K° s.t. lift(alpha) is prime in ZZ
     p = length(K)
     Fact = divisors(fmpz(p-1))[1:end-1]
@@ -25,7 +41,7 @@ function primitive_elem(K::Nemo.GaloisField,first::Bool) #TODO implement compati
     end
 end
 
-function verify_primitive_elem(elem,K)
+function verify_primitive_elem(elem,K::Nemo.GaloisField)
     p = Int(length(K))
     for i = 1:p-2
         elem^i != 1 || return false
@@ -36,38 +52,51 @@ end
 ##
 # implementation of the Magma_Sieve
 ##
+function sieve_params(p,eps::Float64,ratio::Float64)
+	#TODO more analysis and optimization of Sieve Params
 
-function Sieve(K, qlimit, climit, ratio)
-    p = characteristic(K) #(p = Int(length(K)))
+	# assymtotic bounds by Coppersmith, Odlyzko, and Schroeppel L[p,1/2,1/2]# L[n,\alpha ,c]=e^{(c+o(1))(\ln n)^{\alpha }(\ln \ln n)^{1-\alpha }}}   for c=1
+	qlimit = exp((0.5* sqrt(log(p)*log(log(p)))))
+	qlimit *= log(qlimit) # since aproximately    #primes
+	climit = exp((0.5+eps)*sqrt(log(p)*log(log(p))))
+
+	qlimit = ceil(max(qlimit,30))
+	climit = ceil(max(climit,35))
+	steps = (ceil(0.15 * sqrt(p)/qlimit),ceil(0.15 * sqrt(p)/(log(climit)*climit)))
+	return Sparam(qlimit,climit,ratio,steps)
+end
+
+
+function Sieve(F::FField,sieveparams::Sparam)
+
+    p = characteristic(F.K) #(p = Int(length(A.K)))
     H = floor(root(p,2))+1
     J = H^2 - p
 
     # factorbase up to qlimit
-    fb_primes = [i for i in PrimesSet(1,qlimit)]
+    fb_primes = [i for i in PrimesSet(1,sieveparams.qlimit)]
     log2 = log(2.0);
-    logqs = [log(q)/log2 for q in fb_primes] #real logarithms for sieve
+    logqs = [log(q)/log2 for q in fb_primes] #real logarithms for sieve   #WARNING in source code this is more exact (LongFloat ?)
 
-    alpha = primitive_elem(K,true) # first primitive elem, prime in Z i.e small
-    FB = vcat([lift(alpha)],deleteat!(fb_primes,findfirst(isequal(lift(alpha)),fb_primes))) # tauschen a[1] = a[2] , a[2] = [1]
+
+    #FB[findfirst(isequal(lift(alpha))] FB[1] = lift(alpha), FB[]
+    FB = vcat([lift(F.a)],deleteat!(fb_primes,findfirst(isequal(lift(F.a)),fb_primes))) # tauschen a[1] = a[2] , a[2] = [1]
     FBs = deepcopy(FactorBase(FB))
     l = length(FB)
-    Indx = Dict(zip(FB,[i for i=1:length(FB)])) #Index in a dictionary
-    #FB = Factorbase([fmpz(i) for i in FB)
-    #fb_primes is factorbase with lift of alpha on first place
-    #A = zeros(Int64,length(fb_primes),length(fb_primes))
-    A = sparse_matrix(ZZ) #TODO
+    Indx = Dict(zip(FB,[i for i=1:l])) #Index in a dictionary
+    A = sparse_matrix(ZZ)
 
-    for c1 = 1:climit
-        nrows(A)/length(FB) < ratio || break
-        sieve = zeros(climit)
+    for c1 = 1:sieveparams.climit
+        nrows(A)/length(FB) < sieveparams.ratio || break
+        sieve = zeros(sieveparams.climit)
         den = H + c1;                # denominator of relation
         num = -(J + c1*H)            # numerator
         for i=1:length(fb_primes)
             q = fb_primes[i]
             qpow = q
-            nextqpow = qpow
+            nextqpow = qpow   #WARNING inserted, because of some error with nextqpow
             logq = logqs[i]
-            while qpow < qlimit      # qlimit-smooth
+            while qpow < sieveparams.qlimit      # qlimit-smooth
                 den % qpow != 0 || break
                 c2 = num * invmod(den, fmpz(qpow))  % qpow
                 (c2 != 0) || (c2 = qpow)
@@ -77,7 +106,7 @@ function Sieve(K, qlimit, climit, ratio)
                 end
                 while c2 <= length(sieve)
                     sieve[Int(c2)] += logq
-                    if nextqpow > qlimit
+                    if nextqpow > sieveparams.qlimit
                         prod = (J + (c1 + c2)*H + c1*c2) % p
                         nextp = nextqpow
                         while rem(prod,nextp) == 0
@@ -137,21 +166,26 @@ function Sieve(K, qlimit, climit, ratio)
             rel += relinc
         end
     end
-    @debug @assert check_relation_mat(K,A,FB) "Relation Matrix wrong"
+    @debug @assert check_relation_mat(F.K,A,FB) "Relation Matrix wrong"
+	if nrows(A)/length(FB) < sieveparams.ratio
+		#TODO global counter here for optimization of sieveparams
+		sieveparams.qlimit += sieveparams.inc[1]
+		sieveparams.climit += sieveparams.inc[2]
+		return Sieve(F,sieveparams)
+	end
     return A,FBs,FB
 end
 
 function check_relation_mat(K,A,FB)
-    #getindex(A::SMat, i::Int, j::Int)
     p = Int(length(K))
     for k = 1:nrows(A)
         prod = 1
         for i = 1:length(FB)
-            ex = getindex(A,k,i)
+            ex = getindex(A,k,i)#getindex(A::SMat, i::Int, j::Int)
             if ex < 0
-                prod *= invmod(FB[i],fmpz(p))^abs(ex)
+                prod *= invmod(FB[i],fmpz(p))^abs(ex) % p
             else
-                prod  *= FB[i]^ex
+                prod  *= FB[i]^ex % p
             end
         end
         if !(prod % p  == 1)  return false end
@@ -160,14 +194,11 @@ function check_relation_mat(K,A,FB)
 end
 
 
-
-K,K2,K3 = Sieve(GF(107),35,28,1.1)
-
 #Hecke.subset
 #flog,clog,iroot
 
 #badge smoothneth test -> glatttest (factorisieren)
-#psi lower, psi upper in Hecke (Schranken), rho-funktion (dickmann_rho)
+##Examples:
 
-G = GF(1000000007)
-A,B,C = Sieve(G, 250, 80, 1.1)
+B = FField(GF(1000000007),primitive_elem(GF(1000000007),true))
+A,Q,C = Sieve(B, sieve_params(1000000007,0.02,1.1))
