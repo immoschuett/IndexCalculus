@@ -202,3 +202,10 @@ end
 
 B = FField(GF(1000000007),primitive_elem(GF(1000000007),true))
 A,Q,C = Sieve(B, sieve_params(1000000007,0.02,1.1))
+
+B = FField(GF(10007),primitive_elem(GF(10007),true))
+A,Q,C = Sieve(B, sieve_params(10007,0.02,1.1))
+
+typeof(A)
+
+wiedemann(A)
