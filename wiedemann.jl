@@ -1,55 +1,68 @@
 using Hecke,Revise
 revise()
 
-function wiedemann(A,N=103) # A in Z/NZ ^ n*m
+function wiedemann(A,N) # A in Z/NZ ^ n*m
+	@warn "wiedemann still buggy"
 	RR = ResidueRing(ZZ,N)
 	#TODO reduce mod N = p-1
-	# assume N prime ( Z/NZ field)
-	# c in R^m  random ?
+	#for now assume N prime (=> Z/NZ field)
+
 	(n,m) = size(A)
 	A = change_base_ring(RR, A)
 	TA = transpose(A) #later generate random sparse matrix over ZZ
-	r_random = rand(Int8,m)
-	c_random = rand(Int8,m)
-	r = [RR(i) for i in r_random] # later generate random vector over ZZ / sampler ?
-	c = [RR(i) for i in c_random]
+
+	r = [RR(i) for i in rand(Int8,n)] # later generate random vector over ZZ / sampler ?
+	c = [RR(i) for i in rand(Int8,m)]
+	randlin = transpose([RR(i) for i in rand(Int8,m)])
 	origc = deepcopy(c)
-	y = mul(TA,(mul(A,r)))
-	# solve A^tAx = y  => x -y in kernel(A^tA)
+	y = mul(TA,r)
+	y2 = mul(TA,mul(A,y))
+	# solve A^tAx = y2 => x -y in kernel(A^tA) to avoid finding zero vec
+
 	#Wiedemann
-	seq = fmpz_mat((zeros(Int,10,2*n)))
-	#seq = convert(Array{fmpz},(zeros(Int,10,2*n)))#store 10 entrys of the vector sequence
 	#TODO store all to save horner sheme
 	#TODO store some and use a little horner sheme
-	seq = change_base_ring(RR, seq)
-	#seq = convert(Array{nmod},seq)#store 10 entrys of the vector sequence
+	seq = [randlin*c]
 	for i = 1:2*n-1
 		c = mul(TA,(mul(A,c))) # generate sequence
-		seq[:,i+1] = c[1:10]
+		push!(seq,randlin*c)
 	end
-	#return (seq[2,:])
-	done,f = Hecke_berlekamp_massey(seq[2,:])
-	@debug @assert done "modulus N is not prime, TODO: still catch some gcds"
-	v = horner_evaluate(f,TA,A,origc)
-	@debug @assert iszero(mul(TA,(mul(A,v-y)))) "not a kernel vec"
-	#return mul(TA,(mul(A,v)))
-	return v-y
+	done,f = Hecke_berlekamp_massey(seq)
+	@debug !iszero(f(transpose(Matrix(A))*Matrix(A))) ? (@warn "something wrong with berlekamp-massey return") : nothing
+	@debug !done ? (@warn "modulus N is not prime, TODO: still catch some gcds") : nothing
 
+	delta =0
+	while iszero(evaluate(f,0))
+		delta+=1
+		f = divexact(f,gen(parent(f)))
+	end
+	constpartoff = evaluate(f,0)
+	a = -inv(constpartoff)
+	reducedf = divexact(f-constpartoff,gen(parent(f)))
+	compared = a*reducedf(transpose(Matrix(A))*Matrix(A))*y
+	v = mult(a,horner_evaluate(reducedf,TA,A,y))
+	@debug !(y == transpose(Matrix(A))*(Matrix(A)*compared)) ? (@error "compared wrong") : nothing
+	@debug !iszero(mul(TA,(mul(A,v-y2)))) ? (@error "not a kernel vector") : nothing
+	return v-y2
 end
 
 # we use horner sheme to use the sparsity of A
 function horner_evaluate(f::nmod_poly,TA,A,c)  where T
+	#return f(A^t *A)*c
+	x = rand(base_ring(parent(f))) #debug
 	C = collect(coefficients(f))
 	n = length(C)
-	s = mult(C[end],mul((TA),mul(A,c)))
-	for i = n-1:-1:1
-		#println(s)
-		#TA * A * s + fi * c
-		s = mul((TA),mul(A,s)) + mult(C[i],c)
+ 	s2 = C[end]*x + C[end-1] #debug
+	s = mult(C[end],mul(TA,mul(A,c)))+mult(C[end-1],c)
+	for i = n-2:-1:1   #WARNING a_0 in papers, but a_1 in julia
+		#s = A^t * A * s + fi * c  inloop
+		s = mul(TA,mul(A,s)) + mult(C[i],c)
+		s2 = s2*x + C[i] #debug
 	end
+	@debug !(evaluate(f,x) == s2) ? (@error "error in horner sheme implementation control value") : nothing
+	@debug !(f(transpose(Matrix(A))*Matrix(A))*c == s) ? (@error "error in horner sheme implementation real value") : nothing
 	return s
 end
-
 
 function Hecke_berlekamp_massey(L)#::Vector{fmpz})
 	# from Hecke\U6dsX\src\Sparse\Matrix.jl
@@ -96,4 +109,9 @@ function mult(b::nmod, V::Vector{nmod})
 end
 
 ##
-wiedemann(A)
+
+
+N = 10007
+RR = ResidueRing(ZZ,N)
+a = wiedemann(A,N)
+println("check")

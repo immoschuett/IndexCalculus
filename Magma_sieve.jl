@@ -166,7 +166,7 @@ function Sieve(F::FField,sieveparams::Sparam)
             rel += relinc
         end
     end
-    @debug @assert check_relation_mat(F.K,A,FB) "Relation Matrix wrong"
+    @debug !check_relation_mat(F.K,A,FB) ? (@error "Relation Matrix wrong") : nothing
 	if nrows(A)/length(FB) < sieveparams.ratio
 		#TODO global counter here for optimization of sieveparams
 		sieveparams.qlimit += sieveparams.inc[1]
@@ -203,9 +203,5 @@ end
 B = FField(GF(1000000007),primitive_elem(GF(1000000007),true))
 A,Q,C = Sieve(B, sieve_params(1000000007,0.02,1.1))
 
-B = FField(GF(10007),primitive_elem(GF(10007),true))
-A,Q,C = Sieve(B, sieve_params(10007,0.02,1.1))
-
-typeof(A)
-
-wiedemann(A)
+B = FField(GF(103),primitive_elem(GF(103),true))
+A,Q,C = Sieve(B, sieve_params(103,0.02,1.1))
