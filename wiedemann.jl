@@ -1,5 +1,7 @@
 using Hecke,Revise
+ENV["JULIA_DEBUG"] = "all" # enable debugging
 revise()
+include("Magma_sieve.jl")
 
 function wiedemann(A,N) # A in Z/NZ ^ n*m
 	@warn "wiedemann still buggy"
@@ -35,6 +37,7 @@ function wiedemann(A,N) # A in Z/NZ ^ n*m
 		delta+=1
 		f = divexact(f,gen(parent(f)))
 	end
+	@debug !delta ? (println(delta), @warn "something wrong with delta delta") : nothing
 	constpartoff = evaluate(f,0)
 	a = -inv(constpartoff)
 	reducedf = divexact(f-constpartoff,gen(parent(f)))
@@ -108,7 +111,39 @@ end
 ##
 
 
-N = 10007
+N = 102
 RR = ResidueRing(ZZ,N)
 a = wiedemann(A,N)
 println("check")
+
+A
+A = change_base_ring(RR,A)
+iszero(mul(transpose(A),mul(A,a)))
+
+
+function coprime_split(n,Base)
+	#where n is fmpz , Base is a product of primes
+	x = gcd(n,Base)
+	y = div(n,x)
+	c = gcd(x,y)
+	while c != 1
+		x*=c
+		y = div(y,c)
+		c = gcd(x,y)
+	end
+	return (x,y)
+end
+
+coprime_split(9*3*2*123,2*3*5)
+
+
+end
+function wiedemann2(A,N)
+	iseven(N) || @warn "p-1 not even. something i.e. p not prime"
+	SBase = prod([i for i in PrimesSet(1,107)])
+	F,N2 = [2],[div(N,2)]
+	small,big = coprime_split(N2,SBase)
+	(small == 1) || (@warn "N/2=prod(p_i) for p_i small primes")
+
+
+end
