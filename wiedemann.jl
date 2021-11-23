@@ -47,19 +47,21 @@ function wiedemann(A,N) # A in Z/NZ ^ n*m
 end
 
 # we use horner sheme to use the sparsity of A
-function horner_evaluate(f::nmod_poly,TA,A,c)  where T
+function horner_evaluate(f::nmod_poly,TA,A,c)
 	#return f(A^t *A)*c
-	x = rand(base_ring(parent(f))) #debug
+	u = rand(base_ring(parent(f))) #for control value debug
 	C = collect(coefficients(f))
 	n = length(C)
- 	s2 = C[end]*x + C[end-1] #debug
+ 	s2 = C[end]*u + C[end-1] #for control value debug
 	s = mult(C[end],mul(TA,mul(A,c)))+mult(C[end-1],c)
 	for i = n-2:-1:1   #WARNING a_0 in papers, but a_1 in julia
 		#s = A^t * A * s + fi * c  inloop
 		s = mul(TA,mul(A,s)) + mult(C[i],c)
-		s2 = s2*x + C[i] #debug
+		s2 = u*s2 + C[i] #debug
 	end
-	@debug !(evaluate(f,x) == s2) ? (@error "error in horner sheme implementation control value") : nothing
+	@debug !(f(u) == s2) ? (@error "error in horner sheme implementation control value") : nothing
+	println(s)
+	println(f(transpose(Matrix(A))*Matrix(A))*c)
 	@debug !(f(transpose(Matrix(A))*Matrix(A))*c == s) ? (@error "error in horner sheme implementation real value") : nothing
 	return s
 end
@@ -102,10 +104,11 @@ function Hecke_berlekamp_massey(L)#::Vector{fmpz})
 end
 
 function mult(b::nmod, V::Vector{nmod})
-  for i=1:length(V)
-    V[i]*=b
+  W = deepcopy(V)
+  for i=1:length(W)
+    W[i]*=b
   end
-  return V
+  return W
 end
 
 ##
@@ -115,3 +118,21 @@ N = 10007
 RR = ResidueRing(ZZ,N)
 a = wiedemann(A,N)
 println("check")
+
+a = RR(123)
+
+c = [RR(i) for i in rand(Int8,10)]
+d = deepcopy(c)
+mult(a,c)
+mult(a,d)
+
+for i = 1:100
+	c = [RR(i) for i in rand(Int8,10)]
+	d = deepcopy(c)
+	A = mult(a,c)
+	B = mult(a,d)
+	if A != B
+		return error("1")
+	end
+	return true
+end
