@@ -11,12 +11,11 @@ function wiedemann(A,N) # A in Z/NZ ^ n*m
 	A = change_base_ring(RR, A)
 	TA = transpose(A) #later generate random sparse matrix over ZZ
 
-	r = [RR(i) for i in rand(Int8,n)] # later generate random vector over ZZ / sampler ?
+	r = [RR(i) for i in rand(Int8,m)] # later generate random vector over ZZ / sampler ?
 	c = [RR(i) for i in rand(Int8,m)]
 	randlin = transpose([RR(i) for i in rand(Int8,m)])
 	origc = deepcopy(c)
-	y = mul(TA,r)
-	y2 = mul(TA,mul(A,y))
+	y = mul(TA,mul(A,r))
 	# solve A^tAx = y2 => x -y in kernel(A^tA) to avoid finding zero vec
 
 	#Wiedemann
@@ -42,26 +41,21 @@ function wiedemann(A,N) # A in Z/NZ ^ n*m
 	compared = a*reducedf(transpose(Matrix(A))*Matrix(A))*y
 	v = mult(a,horner_evaluate(reducedf,TA,A,y))
 	@debug !(y == transpose(Matrix(A))*(Matrix(A)*compared)) ? (@error "compared wrong") : nothing
-	@debug !iszero(mul(TA,(mul(A,v-y2)))) ? (@error "not a kernel vector") : nothing
-	return v-y2
+	@debug !(y == (mul(TA,(mul(A,v))))) ? (@error "not Ax = y") : nothing
+	@debug !(iszero(mul(TA,(mul(A,v-r))))) ? (@error "not a kernel") : nothing
+	return v-r
 end
 
 # we use horner sheme to use the sparsity of A
 function horner_evaluate(f::nmod_poly,TA,A,c)
 	#return f(A^t *A)*c
-	u = rand(base_ring(parent(f))) #for control value debug
 	C = collect(coefficients(f))
 	n = length(C)
- 	s2 = C[end]*u + C[end-1] #for control value debug
 	s = mult(C[end],mul(TA,mul(A,c)))+mult(C[end-1],c)
 	for i = n-2:-1:1   #WARNING a_0 in papers, but a_1 in julia
 		#s = A^t * A * s + fi * c  inloop
 		s = mul(TA,mul(A,s)) + mult(C[i],c)
-		s2 = u*s2 + C[i] #debug
 	end
-	@debug !(f(u) == s2) ? (@error "error in horner sheme implementation control value") : nothing
-	println(s)
-	println(f(transpose(Matrix(A))*Matrix(A))*c)
 	@debug !(f(transpose(Matrix(A))*Matrix(A))*c == s) ? (@error "error in horner sheme implementation real value") : nothing
 	return s
 end
@@ -118,21 +112,3 @@ N = 10007
 RR = ResidueRing(ZZ,N)
 a = wiedemann(A,N)
 println("check")
-
-a = RR(123)
-
-c = [RR(i) for i in rand(Int8,10)]
-d = deepcopy(c)
-mult(a,c)
-mult(a,d)
-
-for i = 1:100
-	c = [RR(i) for i in rand(Int8,10)]
-	d = deepcopy(c)
-	A = mult(a,c)
-	B = mult(a,d)
-	if A != B
-		return error("1")
-	end
-	return true
-end
