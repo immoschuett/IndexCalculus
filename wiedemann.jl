@@ -33,6 +33,9 @@ function wiedemann(A,N) # A in Z/NZ ^ n*m
 	@debug !done ? (@warn "modulus N is not prime, TODO: still catch some gcds") : nothing
 
 	delta =0
+	if typeof(f) == fmpz
+		@error "something wrong with polynom f"
+	end
 	while iszero(evaluate(f,0))
 		delta+=1
 		f = divexact(f,gen(parent(f)))
@@ -111,7 +114,7 @@ end
 ##
 
 
-N = 102
+N = 103
 RR = ResidueRing(ZZ,N)
 a = wiedemann(A,N)
 println("check")
@@ -136,8 +139,6 @@ end
 
 coprime_split(9*3*2*123,2*3*5)
 
-
-end
 function wiedemann2(A,N)
 	iseven(N) || @warn "p-1 not even. something i.e. p not prime"
 	SBase = prod([i for i in PrimesSet(1,107)])
@@ -150,5 +151,26 @@ end
 
 using Base.Threads
 function block_wiedemann(A,N)
+	RR = ResidueRing(ZZ,N)
+	TA = transpose(A)
+	(n,m) = size(A)
+	l = nthreads()
+	R,W,V = fmpz_mat(zeros(Int,m,l)),fmpz_mat(zeros(Int,m,l)),fmpz_mat(zeros(Int,m,l))
+	change_base_ring(RR,R),change_base_ring(RR,W),change_base_ring(RR,V)
+	Threads.@threads
+		r,w = [RR(i) for i in rand(Int8,m)],[RR(i) for i in rand(Int8,m)]
+		R[:,threadid()] = r , W[:,threadid()] = w, V[:,threadid()] = mul(TA,mul(A,r))
+	end
+	U = deepcopy(V)
+	L = fmpz_mat(zeros(Int,m,l,))
+	Threads.@threads
+		for i = 1:2*ceil(m/2)
+
+	for i = 1:l
+		r,w = [RR(i) for i in rand(Int8,m)],[RR(i) for i in rand(Int8,m)]
+		push!(R,r),push!(W,w),push!(V,mul(TA,mul(A,r)))
+	end
+
+
 	#@Threads
 end
