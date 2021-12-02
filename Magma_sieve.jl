@@ -31,22 +31,24 @@ end
 function primitive_elem(K::FinField,first::Bool) #TODO implement compatible for Abstract field or Nemo.GaloisfmpzField
     #returns a (the first) generator alpha of K° s.t. lift(alpha) is prime in ZZ
     p = length(K)
-    Fact = prime_divisors(fmpz(p-1))[1:end-1]
+    Fact = prime_divisors(fmpz(p-1))
     while true # alpha exists
         for y in K
 			bool = true
             if !first y = rand(K) end
 			if isprime(lift(y))
-				for i = 1:length(Fact)
-					one(K) != y^(div(fmpz(p-1),Fact[i])) || (bool = false), break
+				if !(one(K) in [y^(div(fmpz(p-1),i)) for i in Fact])
+					#WARNING note we still have too many tests here (to avoid inner loop)
+					#@debug verify_primitive_elem(y, K) ? true : @error "primitive element wrong"
+            		return y
 				end
 			end
-			bool || return y
         end
     end
 end
 
 function verify_primitive_elem(elem,K::Nemo.GaloisField)
+	!iszero(elem) || return false
     p = Int(length(K))
     for i = 1:p-2
         elem^i != 1 || return false
