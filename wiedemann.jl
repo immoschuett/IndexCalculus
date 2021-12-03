@@ -148,7 +148,7 @@ function wiedemann2(A,N)
 
 
 end
-
+#=
 using Base.Threads
 function block_wiedemann(A,N)
 	RR = ResidueRing(ZZ,N)
@@ -174,3 +174,4 @@ function block_wiedemann(A,N)
 
 	#@Threads
 end
+=#
