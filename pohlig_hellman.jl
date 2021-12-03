@@ -22,7 +22,13 @@ function pohlig_hellman()
             v = wiedemann(RELMat,i-1)
             lambda = invmod(v[1],i-1)
             v = lambda.*v
-
+            check_base_logs(F_i,FB_x,v)
+            # TODO eliminate wrong logs
+            for l = 1:i-1
+                # search for l s.t a^l y  Q_new smoth 
+                # TODO NF-sieve or Q-sieve to find l
+            end 
+            #
 
         else 
             #bruteforce
