@@ -48,7 +48,8 @@ function wiedemann(A,N) # A in Z/NZ ^ n*m
 	v = mult(a,horner_evaluate(reducedf,TA,A,y))
 	@debug !(y == transpose(Matrix(A))*(Matrix(A)*compared)) ? (@error "compared wrong") : nothing
 	@debug !(y == (mul(TA,(mul(A,v))))) ? (@error "not Ax = y") : nothing
-	@debug !(iszero(mul(TA,(mul(A,v-r))))) ? (@error "not a kernel") : nothing
+	@debug !(iszero(mul(TA,(mul(A,v-r))))) ? (@error "not a kernelvec of TA A") : nothing
+	@debug !(iszero(mul(A,v-r))) ? (@error "not a kernelvec of A") : nothing
 	return v-r
 end
 
@@ -118,6 +119,7 @@ N = 103
 RR = ResidueRing(ZZ,N)
 a = wiedemann(A,N)
 println("check")
+
 
 A
 A = change_base_ring(RR,A)

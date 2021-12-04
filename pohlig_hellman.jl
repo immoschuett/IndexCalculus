@@ -18,15 +18,20 @@ function pohlig_hellman()
          #compute x_i such that g_i ^ x_i = h_i
         if i != 2 
             SP = sieve_params(i,0.02,1.1)
-            RELMat,FBase,FBase_x = Sieve(F_i,SP)
+            RELMat,FB,FB_x = Sieve(F_i,SP)
             v = wiedemann(RELMat,i-1)
             lambda = invmod(v[1],i-1)
             v = lambda.*v
-            check_base_logs(F_i,FB_x,v)
-            # TODO eliminate wrong logs
-            for l = 1:i-1
-                # search for l s.t a^l y  Q_new smoth 
+            FB_x2 = new_base_logs(F_i,FB_x,v,length(FB))
+            #TODO maybe insert some H+ci to compensate wrong primes in FB
+            while true 
+                randomexp = rand(1:i-1)
+                # search for l s.t a^l h_i is  Q_new smoth 
                 # TODO NF-sieve or Q-sieve to find l
+                if !issmooth(FBs,fmpz(h_i*a^randomexp)) break end 
+                dict_factors2 = Hecke.factor(FBs,h_i*a^randomexp)
+                # some sol log = sum of log * exponents push!(Sol,sum())
+
             end 
             #
 
@@ -45,11 +50,12 @@ function pohlig_hellman()
     #use the CRT
 end 
 
-function check_base_logs(F::FField,FB_x,v)
+function new_base_logs(F::FField,FB_x,v,l)
     #mult out a^log_a(v[i]) == v ?
     mask = [F.a for i = 1:length(FB_x)].^v .== FB_x
     @debug isszero(sum(mask)) ? (@error "all FB_x logs wrong") : nothing
-    return mask
+    newFB_x = FB_x[mask]
+    return FactorBase(newFB_x[1:(l-sum(mask[1:l]))])
 end
 
 
