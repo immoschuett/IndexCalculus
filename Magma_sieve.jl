@@ -87,7 +87,17 @@ function Sieve(F::FField,sieveparams::Sparam)
 
 
     #FB[findfirst(isequal(lift(alpha))] FB[1] = lift(alpha), FB[]
-    FB = vcat([lift(F.a)],deleteat!(fb_primes,findfirst(isequal(lift(F.a)),fb_primes))) # tauschen a[1] = a[2] , a[2] = [1]
+    if isprime(lift(F.a))
+        FB = vcat([lift(F.a)],deleteat!(fb_primes,findfirst(isequal(lift(F.a)),fb_primes))) # tauschen a[1] = a[2] , a[2] = [1]
+    else  #note here we have F.a is prime power from pohlig hellmann
+        for i = 1:length(fb_primes)
+            if gcd(fmpz(fb_primes[i]),lift(F.a)) != 1
+                deleteat!(fb_primes,i)
+                break
+            end
+        end 
+        FB = vcat([lift(F.a)],fb_primes)
+    end
     FBs = deepcopy(FactorBase(FB))
     l = length(FB)
     Indx = Dict(zip(FB,[i for i=1:l])) #Index in a dictionary
