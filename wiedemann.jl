@@ -54,7 +54,7 @@ function wiedemann(A,N) # A in Z/NZ ^ n*m
 end
 
 # we use horner sheme to use the sparsity of A
-function horner_evaluate(f::nmod_poly,TA,A,c)
+function horner_evaluate(f,TA,A,c)
 	#return f(A^t *A)*c
 	C = collect(coefficients(f))
 	n = length(C)
@@ -104,7 +104,7 @@ function Hecke_berlekamp_massey(L)#::Vector{fmpz})
      return true, divexact(v1, leading_coefficient(v1))
 end
 
-function mult(b::nmod, V::Vector{nmod})
+function mult(b, V)
   W = deepcopy(V)
   for i=1:length(W)
     W[i]*=b
@@ -124,7 +124,7 @@ println("check")
 A
 A = change_base_ring(RR,A)
 iszero(mul(transpose(A),mul(A,a)))
-
+println(Matrix(A))
 
 function coprime_split(n,Base)
 	#where n is fmpz , Base is a product of primes

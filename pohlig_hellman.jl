@@ -14,16 +14,13 @@ function pohlig_hellman(g,h,F)
 
     for i in L 
         g_i,h_i = g^div(p,i),h^div(p,i) 
-        @debug isprime(lift(g_i)) ? nothing : (@error "g_i not prime in Z") # NOTE we wont have this wl we will have g_i = g^2 or other powers, since g prime already
-        #Isomorphism mapping ? 
-
+        @debug isprime(lift(g_i)) ? nothing : (@warn "g_i not prime in Z") # NOTE we wont have this wl we will have g_i = g^2 or other powers, since g prime already
         F_i = FField(GF(i),g_i)
          #compute x_i such that g_i ^ x_i = h_i
         if i != 2 
-            SP = sieve_params(i,0.02,1.1)
-            return(g_i,h_i,SP,F_i)
-            RELMat,FB,FB_x = Sieve(F_i,SP)
-            v = wiedemann(RELMat,i-1)
+            SP = sieve_params(p,0.02,1.1)
+            RELMat,FB,FB_x = Sieve(F,SP)
+            v = wiedemann(RELMat,i)
             lambda = invmod(v[1],i-1)
             v = lambda.*v
             FB_x2,new_logs = new_base_with_logs(F_i,FB_x,v,length(FB))
