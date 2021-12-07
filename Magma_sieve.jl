@@ -89,7 +89,7 @@ function Sieve(F::FField,sieveparams::Sparam)
     #FB[findfirst(isequal(lift(alpha))] FB[1] = lift(alpha), FB[]
     if isprime(lift(F.a))
         FB = vcat([lift(F.a)],deleteat!(fb_primes,findfirst(isequal(lift(F.a)),fb_primes))) # tauschen a[1] = a[2] , a[2] = [1]
-    else  #note here we have F.a is prime power from pohlig hellmann
+    else  #note here we have F.a is prime power from pohlig hellmann  for some use later.
         for i = 1:length(fb_primes)
             if gcd(fmpz(fb_primes[i]),lift(F.a)) != 1
                 deleteat!(fb_primes,i)
@@ -99,7 +99,8 @@ function Sieve(F::FField,sieveparams::Sparam)
         FB = vcat([lift(F.a)],fb_primes)
     end
     FBs = deepcopy(FactorBase(FB))
-    l = length(FB)
+    l2 = length(FB)
+    l = deepcopy(l2)
     Indx = Dict(zip(FB,[i for i=1:l])) #Index in a dictionary
     A = sparse_matrix(ZZ)
 
@@ -190,7 +191,7 @@ function Sieve(F::FField,sieveparams::Sparam)
 		sieveparams.climit += sieveparams.inc[2]
 		return Sieve(F,sieveparams)
 	end
-    return A,FBs,FB
+    return A,FBs,FB,l
 end
 
 function check_relation_mat(K,A,FB)

@@ -4,7 +4,6 @@ revise()
 include("Magma_sieve.jl")
 
 function wiedemann(A,N) # A in Z/NZ ^ n*m
-	@warn "wiedemann still buggy"
 	RR = ResidueRing(ZZ,N)
 	#TODO reduce mod N = p-1
 	#for now assume N prime (=> Z/NZ field)
@@ -40,7 +39,7 @@ function wiedemann(A,N) # A in Z/NZ ^ n*m
 		delta+=1
 		f = divexact(f,gen(parent(f)))
 	end
-	@debug !delta ? (println(delta), @warn "something wrong with delta delta") : nothing
+	@debug delta>1 ? (println(delta), @warn "something wrong with delta delta") : nothing
 	constpartoff = evaluate(f,0)
 	a = -inv(constpartoff)
 	reducedf = divexact(f-constpartoff,gen(parent(f)))
