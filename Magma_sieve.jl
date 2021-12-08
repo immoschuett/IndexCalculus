@@ -82,22 +82,13 @@ function Sieve(F::FField,sieveparams::Sparam)
 
     # factorbase up to qlimit
     fb_primes = [i for i in PrimesSet(1,sieveparams.qlimit)]
-    log2 = log(2.0);
-    logqs = [log(q)/log2 for q in fb_primes] #real logarithms for sieve   #WARNING in source code this is more exact (LongFloat ?)
 
 
     #FB[findfirst(isequal(lift(alpha))] FB[1] = lift(alpha), FB[]
-    if isprime(lift(F.a))
-        FB = vcat([lift(F.a)],deleteat!(fb_primes,findfirst(isequal(lift(F.a)),fb_primes))) # tauschen a[1] = a[2] , a[2] = [1]
-    else  #note here we have F.a is prime power from pohlig hellmann  for some use later.
-        for i = 1:length(fb_primes)
-            if gcd(fmpz(fb_primes[i]),lift(F.a)) != 1
-                deleteat!(fb_primes,i)
-                break
-            end
-        end 
-        FB = vcat([lift(F.a)],fb_primes)
-    end
+    indx = findfirst(isequal(lift(F.a)),fb_primes)
+    FB = vcat([lift(F.a)],deleteat!(fb_primes,indx)) # tauschen a[1] = a[2] , a[2] = [1]
+    log2 = log(2.0);
+    logqs = [log(q)/log2 for q in FB] #real logarithms for sieve 
     FBs = deepcopy(FactorBase(FB))
     l2 = length(FB)
     l = deepcopy(l2)
@@ -217,11 +208,5 @@ end
 
 #badge smoothneth test -> glatttest (factorisieren)
 ##Examples:
-
-B = FField(GF(1000000007),primitive_elem(GF(1000000007),true))
-A,Q,C = Sieve(B, sieve_params(1000000007,0.02,1.1))
-
 B = FField(GF(103),primitive_elem(GF(103),true))
-A,Q,C = Sieve(B, sieve_params(103,0.02,1.1))
-
-primitive_elem(GF(103),true)
+A,Q,C = Sieve(B, sieve_params(103,0.001,1.3))

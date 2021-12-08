@@ -10,6 +10,7 @@ function wiedemann(A,N) # A in Z/NZ ^ n*m
 
 	(n,m) = size(A)
 	A = change_base_ring(RR, A)
+	@debug (rank(Matrix(A)) == (m-1)) ? nothing : (@warn("rank A small"),println(rank(Matrix(A))," != m-1 = ",m-1))
 	TA = transpose(A) #later generate random sparse matrix over ZZ
 
 	r = [RR(i) for i in rand(Int8,m)] # later generate random vector over ZZ / sampler ?
@@ -117,62 +118,3 @@ end
 N = 103
 RR = ResidueRing(ZZ,N)
 a = wiedemann(A,N)
-println("check")
-
-
-A
-A = change_base_ring(RR,A)
-iszero(mul(transpose(A),mul(A,a)))
-println(Matrix(A))
-
-function coprime_split(n,Base)
-	#where n is fmpz , Base is a product of primes
-	x = gcd(n,Base)
-	y = div(n,x)
-	c = gcd(x,y)
-	while c != 1
-		x*=c
-		y = div(y,c)
-		c = gcd(x,y)
-	end
-	return (x,y)
-end
-
-coprime_split(9*3*2*123,2*3*5)
-
-function wiedemann2(A,N)
-	iseven(N) || @warn "p-1 not even. something i.e. p not prime"
-	SBase = prod([i for i in PrimesSet(1,107)])
-	F,N2 = [2],[div(N,2)]
-	small,big = coprime_split(N2,SBase)
-	(small == 1) || (@warn "N/2=prod(p_i) for p_i small primes")
-
-
-end
-#=
-using Base.Threads
-function block_wiedemann(A,N)
-	RR = ResidueRing(ZZ,N)
-	TA = transpose(A)
-	(n,m) = size(A)
-	l = nthreads()
-	R,W,V = fmpz_mat(zeros(Int,m,l)),fmpz_mat(zeros(Int,m,l)),fmpz_mat(zeros(Int,m,l))
-	change_base_ring(RR,R),change_base_ring(RR,W),change_base_ring(RR,V)
-	Threads.@threads
-		r,w = [RR(i) for i in rand(Int8,m)],[RR(i) for i in rand(Int8,m)]
-		R[:,threadid()] = r , W[:,threadid()] = w, V[:,threadid()] = mul(TA,mul(A,r))
-	end
-	U = deepcopy(V)
-	L = fmpz_mat(zeros(Int,m,l,))
-	Threads.@threads
-		for i = 1:2*ceil(m/2)
-
-	for i = 1:l
-		r,w = [RR(i) for i in rand(Int8,m)],[RR(i) for i in rand(Int8,m)]
-		push!(R,r),push!(W,w),push!(V,mul(TA,mul(A,r)))
-	end
-
-
-	#@Threads
-end
-=#
