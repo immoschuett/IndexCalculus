@@ -29,17 +29,9 @@ function Indiv_Log(F,FB,FB_logs,h)
     factorization = Hecke.factor(FB,lift(h*(F.a)^randomexp))
 
     log_h = -randomexp + sum([exp*FB_logs[prime] for (prime,exp) in factorization])
-    @debug (F.a^log_h == h) ? nothing : (@error "calculation of log_h failed")
+    @debug (F.a^lift(log_h) == h) ? nothing : (@error "calculation of log_h failed")
     return log_h
 end 
-
-
-B = FField(GF(200087),primitive_elem(GF(200087),true))
-g = primitive_elem(GF(200087),true)
-FB_logs,kern,FB = FBlogs(B)
-kern
-FB_logs
-Indiv_Log(B,FB,FB_logs,B.a^1234)
 
 
 function FBlogs_new(F::FField)
@@ -99,6 +91,24 @@ function check_logdict(F,D,Q)
     return true 
 end 
 
+
+function cryptoprime(N)
+    #return a Prime p with N digits. s.t (p-1)/2 is prime
+    p = fmpz(10)^N
+    while true 
+        p = next_prime(p+1)
+        !isprime(div(p-1,2)) || return p
+    end 
+end 
+
+
+B = FField(GF(200087),primitive_elem(GF(200087),true))
+g = primitive_elem(GF(200087),true)
+FB_logs,kern,FB = FBlogs(B)
+kern
+FB_logs
+Indiv_Log(B,FB,FB_logs,B.a^1234)
+
 dict,kern,FB = FBlogs_new(B)
 typeof(kern[6])
 inv(kern[6])
@@ -106,4 +116,10 @@ crs_fmpz([fmpz(25931),fmpz(0)],[fmpz(100043),fmpz(2)])
 
 RR = ResidueRing(ZZ,200086)
 RR(lift(kern[6]) * fmpz(2) * fmpz(-50021))
+
+
+p = cryptoprime(11)
+BigField = FField(GF(p),primitive_elem(GF(p),true))
+
+FBlogs(BigField)
 
