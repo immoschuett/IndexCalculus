@@ -1,5 +1,5 @@
 using Hecke,Nemo
-include("Magma_sieve.jl")
+include("Magma_sieve.jl"),include("wiedemann.jl")
 function FBlogs(F::FField)
     #for F FField find FB,FB_logs,FB_array
     p = length(F.K)
@@ -58,14 +58,19 @@ function FBlogs_new(F::FField)
     #get kernel mod p-1 / 2 
     RELMat = change_base_ring(RR,RELMat)
     n,m = size(RELMat)
-    println(n,m)
-    dim,kern = kernel(Matrix(RELMat)) #TODO wiedemann CRT here
-    @debug dim == 1 || (@warn "dim(ker(A)mod(p-1)/2) > 1")
-    
+    #dim,kern = kernel(Matrix(RELMat)) #TODO wiedemann CRT here
+    #@debug dim == 1 || (@warn "dim(ker(A)mod(p-1)/2) > 1")
+    @label retour
+    kern = wiedemann(RELMat,modulus_)
+
+    @debug iszero(kern) ? (@info "trivial found trivial kernel") : (@info "succeded wiedemann")
+    !iszero(kern) || @goto retour
+    #return inv(v[1]).*v
     #reconstruct mod p (note this works here if (p-1)/2 prime) Only 2 checks necesarry.
     #return kern,u,v
+    kern = inv(kern[1]).*kern
 
-    Q,L = [],[]
+    Q,L = Array{fmpz}([]),Array{fmpz}([])
     for i in 1:l
         temp = lift(kern[i])*fmpz(2)*u
         test1 = temp%(p-1)
@@ -80,6 +85,7 @@ function FBlogs_new(F::FField)
         end 
     end 
     #Indx = Dict(zip(Q,[i  for i=1:length(Q)]))
+    println(typeof(Q))
     Logdict = Dict(zip(Q,L))
     @debug check_logdict(F,Logdict,Q) ? (@info "Log_dict correct") : (@error "Log_dict incorrect")
     @debug length(Logdict) ==l ? (@info "all FB logs found") : (@warn "at least " print(length(Logdict)-l) " not found")
@@ -93,7 +99,7 @@ function check_logdict(F,D,Q)
     return true 
 end 
 
-dict,kern,FB = FBlogs_new(B);
+dict,kern,FB = FBlogs_new(B)
 typeof(kern[6])
 inv(kern[6])
 crs_fmpz([fmpz(25931),fmpz(0)],[fmpz(100043),fmpz(2)])

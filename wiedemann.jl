@@ -111,10 +111,3 @@ function mult(b, V)
   end
   return W
 end
-
-##
-
-
-N = 103
-RR = ResidueRing(ZZ,N)
-a = wiedemann(A,N)
