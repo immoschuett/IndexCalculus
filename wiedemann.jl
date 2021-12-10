@@ -8,7 +8,7 @@ function wiedemann(A,N) # A in Z/NZ ^ n*m
 	#TODO reduce mod N = p-1
 	#for now assume N prime (=> Z/NZ field)
 
-	(n,m) = size(A)
+	(n,m) = size(A);
 	A = change_base_ring(RR, A)
 	@debug (rank(Matrix(A)) == (m-1)) ? nothing : (@warn("rank A small"),println(rank(Matrix(A))," != m-1 = ",m-1))
 	TA = transpose(A) #later generate random sparse matrix over ZZ

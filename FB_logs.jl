@@ -1,5 +1,6 @@
 using Hecke,Nemo
 include("Magma_sieve.jl"),include("wiedemann.jl")
+revise()
 function FBlogs(F::FField)
     #for F FField find FB,FB_logs,FB_array
     p = length(F.K)
@@ -49,7 +50,7 @@ function FBlogs_new(F::FField)
 
     #get kernel mod p-1 / 2 
     RELMat = change_base_ring(RR,RELMat)
-    n,m = size(RELMat)
+    #n,m = size(RELMat);
     #dim,kern = kernel(Matrix(RELMat)) #TODO wiedemann CRT here
     #@debug dim == 1 || (@warn "dim(ker(A)mod(p-1)/2) > 1")
     @label retour
@@ -77,7 +78,6 @@ function FBlogs_new(F::FField)
         end 
     end 
     #Indx = Dict(zip(Q,[i  for i=1:length(Q)]))
-    println(typeof(Q))
     Logdict = Dict(zip(Q,L))
     @debug check_logdict(F,Logdict,Q) ? (@info "Log_dict correct") : (@error "Log_dict incorrect")
     @debug length(Logdict) ==l ? (@info "all FB logs found") : (@warn "at least " print(length(Logdict)-l) " not found")
@@ -110,16 +110,9 @@ FB_logs
 Indiv_Log(B,FB,FB_logs,B.a^1234)
 
 dict,kern,FB = FBlogs_new(B)
-typeof(kern[6])
-inv(kern[6])
-crs_fmpz([fmpz(25931),fmpz(0)],[fmpz(100043),fmpz(2)])
-
-RR = ResidueRing(ZZ,200086)
-RR(lift(kern[6]) * fmpz(2) * fmpz(-50021))
-
 
 p = cryptoprime(11)
 BigField = FField(GF(p),primitive_elem(GF(p),true))
 
-FBlogs(BigField)
+FBlogs(BigField);
 
