@@ -9,7 +9,6 @@ function FBlogs(F::FField)
     RELMat,FB,FB_x,l = Sieve(F,SP)
     RELMat = change_base_ring(ResidueRing(ZZ,fmpz((p-1))),RELMat)
     n,m = size(RELMat)
-    println(n,m)
     dim,kern = kernel(Matrix(RELMat)) #TODO wiedemann CRT here
     o = kern[:,1]
     mask = [F.a^lift(o[i]) for i = 1:length(o)] .== FB_x
@@ -55,7 +54,7 @@ function FBlogs_new(F::FField)
     #@debug dim == 1 || (@warn "dim(ker(A)mod(p-1)/2) > 1")
     @label retour
     kern = wiedemann(RELMat,modulus_)
-
+    #TODO exeption if too many loops... / probably inf running time if kernel trivial
     @debug iszero(kern) ? (@info "trivial found trivial kernel") : (@info "succeded wiedemann")
     !iszero(kern) || @goto retour
     #return inv(v[1]).*v
@@ -102,17 +101,44 @@ function cryptoprime(N)
 end 
 
 
-B = FField(GF(200087),primitive_elem(GF(200087),true))
-g = primitive_elem(GF(200087),true)
+B = FField(GF(fmpz(200087)),primitive_elem(GF(fmpz(200087)),true))
+g = primitive_elem(GF(fmpz(200087)),true)
 FB_logs,kern,FB = FBlogs(B)
 kern
 FB_logs
 Indiv_Log(B,FB,FB_logs,B.a^1234)
 
-dict,kern,FB = FBlogs_new(B)
+@code_warntype FBlogs_new(B)
 
 p = cryptoprime(11)
 BigField = FField(GF(p),primitive_elem(GF(p),true))
 
-FBlogs(BigField);
+dict,kern,FB = FBlogs_new(BigField)
 
+using Profile
+
+@profile FBlogs_new(BigField)
+
+Profile.print()
+
+@code_warntype cryptoprime(10)
+SP = sieve_params(200087,0.02,1.3)
+@code_warntype sieve_params(200087,0.02,1.3)
+root(fmpz(3),2)
+@code_warntype Sieve(B,SP)
+
+
+#=
+TODO list so far:
+
+>> Implement good logger to quick_overview/present performance/correctness
+>> debug/improve with @code_warntype 
+>> optimize with  @profile
+>> Implement block wiedemann for faster performanve 
+>> implement sieve for faster finding l for individual logs
+
+#Further notes:
+>> flog,clog,iroot
+>> badge smoothneth test -> glatttest (factorisieren)
+
+=#

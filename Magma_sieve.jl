@@ -1,6 +1,6 @@
 
 ##
-Fachpraktikum = UInt32(2) #v0x00.000.002
+Fachpraktikum = UInt32(0x00000001001) #v0x00.001.001
 ##
 
 #WARNING all implementations are quick and naive (slow but mostly correct i hope)
@@ -16,8 +16,8 @@ revise()
 abstract type DLP end
 
 mutable struct FField<:DLP
-	K::FinField
-	a::FinFieldElem #primitive element
+	K::Nemo.GaloisFmpzField
+	a::gfp_fmpz_elem #primitive element
 end
 mutable struct Sparam<:DLP
 	qlimit::Int64
@@ -59,7 +59,7 @@ end
 ##
 # implementation of the Magma_Sieve
 ##
-function sieve_params(p,eps::Float64,ratio::Float64)
+function sieve_params(p::Int,eps::Float64,ratio::Float64)
 	#TODO more analysis and optimization of Sieve Params
 
 	# assymtotic bounds by Coppersmith, Odlyzko, and Schroeppel L[p,1/2,1/2]# L[n,\alpha ,c]=e^{(c+o(1))(\ln n)^{\alpha }(\ln \ln n)^{1-\alpha }}}   for c=1
@@ -118,7 +118,7 @@ function Sieve(F::FField,sieveparams::Sparam)
                     if nextqpow > sieveparams.qlimit
                         prod = (J + (c1 + c2)*H + c1*c2) % p
                         nextp = nextqpow
-                        while rem(prod,nextp) == 0
+                        while rem(prod,nextp) ==
                             sieve[Int(c2)] += logq
                             nextp = nextp*q
                         end
@@ -201,12 +201,3 @@ function check_relation_mat(K,A,FB)
     end
     return true
 end
-
-
-#Hecke.subset
-#flog,clog,iroot
-
-#badge smoothneth test -> glatttest (factorisieren)
-##Examples:
-B = FField(GF(103),primitive_elem(GF(103),true))
-A,Q,C = Sieve(B, sieve_params(103,0.001,1.3))
