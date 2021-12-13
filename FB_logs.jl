@@ -1,4 +1,4 @@
-using Hecke,Nemo
+using Hecke,Nemo,Revise
 include("Magma_sieve.jl"),include("wiedemann.jl")
 revise()
 function FBlogs(F::FField)
@@ -78,8 +78,10 @@ function FBlogs_new(F::FField)
     end 
     #Indx = Dict(zip(Q,[i  for i=1:length(Q)]))
     Logdict = Dict(zip(Q,L))
-    @debug check_logdict(F,Logdict,Q) ? (@info "Log_dict correct") : (@error "Log_dict incorrect")
-    @debug length(Logdict) ==l ? (@info "all FB logs found") : (@warn "at least " print(length(Logdict)-l) " not found")
+    @debug begin 
+        check_logdict(F,Logdict,Q) ? (@info "FBLOGS: Log_dict correct") : (@error "FBLOGS: Log_dict incorrect")
+        length(Logdict) ==l ? (@info "FBLOGS: all FB logs found") : (@warn "FBLOGS: at least " print(length(Logdict)-l) " not found")
+    end 
     return Logdict,kern,FactorBase(Q)
 end
 
@@ -110,11 +112,12 @@ Indiv_Log(B,FB,FB_logs,B.a^1234)
 
 @code_warntype FBlogs_new(B)
 
-p = cryptoprime(11)
+p = cryptoprime(15)
 BigField = FField(GF(p),primitive_elem(GF(p),true))
 
 dict,kern,FB = FBlogs_new(BigField)
 
+BigField.a^-566801051557530
 using Profile
 
 @profile FBlogs_new(BigField)
@@ -142,3 +145,5 @@ TODO list so far:
 >> badge smoothneth test -> glatttest (factorisieren)
 
 =#
+
+ENV["JULIA_DEBUG"] = "" # enable debugging

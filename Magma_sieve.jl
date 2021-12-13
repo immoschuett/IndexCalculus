@@ -9,7 +9,6 @@ Fachpraktikum = UInt32(0x00000001001) #v0x00.001.001
 ##
 
 using Hecke,Nemo,Revise
-ENV["JULIA_DEBUG"] = "all" # enable debugging
 revise()
 ##
 
@@ -59,7 +58,7 @@ end
 ##
 # implementation of the Magma_Sieve
 ##
-function sieve_params(p::Int,eps::Float64,ratio::Float64)
+function sieve_params(p,eps::Float64,ratio::Float64)
 	#TODO more analysis and optimization of Sieve Params
 
 	# assymtotic bounds by Coppersmith, Odlyzko, and Schroeppel L[p,1/2,1/2]# L[n,\alpha ,c]=e^{(c+o(1))(\ln n)^{\alpha }(\ln \ln n)^{1-\alpha }}}   for c=1
@@ -75,7 +74,7 @@ end
 
 
 function Sieve(F::FField,sieveparams::Sparam)
-
+    @debug @info "SIEVE: starting Sieve"
     p = characteristic(F.K) #(p = Int(length(A.K)))
     H = floor(root(p,2))+1
     J = H^2 - p
@@ -118,7 +117,7 @@ function Sieve(F::FField,sieveparams::Sparam)
                     if nextqpow > sieveparams.qlimit
                         prod = (J + (c1 + c2)*H + c1*c2) % p
                         nextp = nextqpow
-                        while rem(prod,nextp) ==
+                        while rem(prod,nextp) == 0
                             sieve[Int(c2)] += logq
                             nextp = nextp*q
                         end
@@ -175,13 +174,14 @@ function Sieve(F::FField,sieveparams::Sparam)
             rel += relinc
         end
     end
-    @debug !check_relation_mat(F.K,A,FB) ? (@error "Relation Matrix wrong") : nothing
-	if nrows(A)/length(FB) < sieveparams.ratio
+    if nrows(A)/length(FB) < sieveparams.ratio
+        @debug @info "SIEVE: increase sieveparams"
 		#TODO global counter here for optimization of sieveparams
 		sieveparams.qlimit += sieveparams.inc[1]
 		sieveparams.climit += sieveparams.inc[2]
 		return Sieve(F,sieveparams)
 	end
+    @debug check_relation_mat(F.K,A,FB) ? (@info "SIEVE: all Relations in Matrix correct") : (@error "SIEVE: Relation Matrix wrong")
     return A,FBs,FB,l
 end
 
