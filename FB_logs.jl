@@ -1,40 +1,25 @@
-using Hecke,Nemo,Revise
+using Hecke,Nemo,Revise,Profile
 include("Magma_sieve.jl"),include("wiedemann.jl")
 revise()
-function FBlogs(F::FField)
-    #for F FField find FB,FB_logs,FB_array
-    p = length(F.K)
-    g = F.a
-    SP = sieve_params(p,0.02,1.3)
-    RELMat,FB,FB_x,l = Sieve(F,SP)
-    RELMat = change_base_ring(ResidueRing(ZZ,fmpz((p-1))),RELMat)
-    n,m = size(RELMat)
-    dim,kern = kernel(Matrix(RELMat)) #TODO wiedemann CRT here
-    o = kern[:,1]
-    mask = [F.a^lift(o[i]) for i = 1:length(o)] .== FB_x
-    l = min(l,(sum(mask))) #TODO other notation here
-    FB = FB_x[mask][1:l]
-    o = Array(o)[mask][1:l]
-    return Dict(zip(FB,o)),kern,FactorBase(FB)
-end
+ENV["JULIA_DEBUG"] = "all" # enable debugging , disable: ENV["JULIA_DEBUG"] = ""
 
-function Indiv_Log(F,FB,FB_logs,h)
-    #return log_a(h) i.e x s.t a^x = h
-    p = length(F.K)
-    g = F.a
-    randomexp = fmpz(rand(1:p-1))
-    while !issmooth(FB,lift(h*g^randomexp))    # TODO NF-sieve or Q-sieve to find l
-        randomexp = fmpz(rand(1:p-1))
-    end  
-    factorization = Hecke.factor(FB,lift(h*(F.a)^randomexp))
-
-    log_h = -randomexp + sum([exp*FB_logs[prime] for (prime,exp) in factorization])
-    @debug (F.a^lift(log_h) == h) ? nothing : (@error "calculation of log_h failed")
-    return log_h
+function check_logdict(F,D,Q)
+    for q in Q 
+        F.a^D[q] == q || return false 
+    end 
+    return true 
 end 
 
+function cryptoprime(N)
+    #return a Prime p with N digits. s.t (p-1)/2 is prime
+    p = fmpz(10)^N
+    while true 
+        p = next_prime(p+1)
+        !isprime(div(p-1,2)) || return p
+    end 
+end 
 
-function FBlogs_new(F::FField)
+function FB_logs(F::FField)
     #for F FField find FB,FB_logs,FB_array
     p = length(F.K)
     modulus_ = fmpz((p-1)/2)
@@ -85,51 +70,20 @@ function FBlogs_new(F::FField)
     return Logdict,kern,FactorBase(Q)
 end
 
-function check_logdict(F,D,Q)
-    for q in Q 
-        F.a^D[q] == q || return false 
-    end 
-    return true 
+function Indiv_Log(F,FB,FB_logs,h)
+    #return log_a(h) i.e x s.t a^x = h
+    p = length(F.K)
+    g = F.a
+    randomexp = fmpz(rand(1:p-1))
+    while !issmooth(FB,lift(h*g^randomexp))    # TODO NF-sieve or Q-sieve to find l
+        randomexp = fmpz(rand(1:p-1))
+    end  
+    factorization = Hecke.factor(FB,lift(h*(F.a)^randomexp))
+
+    log_h = -randomexp + sum([exp*FB_logs[prime] for (prime,exp) in factorization])
+    @debug (F.a^lift(log_h) == h) ? nothing : (@error "calculation of log_h failed")
+    return log_h
 end 
-
-
-function cryptoprime(N)
-    #return a Prime p with N digits. s.t (p-1)/2 is prime
-    p = fmpz(10)^N
-    while true 
-        p = next_prime(p+1)
-        !isprime(div(p-1,2)) || return p
-    end 
-end 
-
-
-B = FField(GF(fmpz(200087)),primitive_elem(GF(fmpz(200087)),true))
-g = primitive_elem(GF(fmpz(200087)),true)
-FB_logs,kern,FB = FBlogs(B)
-kern
-FB_logs
-Indiv_Log(B,FB,FB_logs,B.a^1234)
-
-@code_warntype FBlogs_new(B)
-
-p = cryptoprime(15)
-BigField = FField(GF(p),primitive_elem(GF(p),true))
-
-dict,kern,FB = FBlogs_new(BigField)
-
-BigField.a^-566801051557530
-using Profile
-
-@profile FBlogs_new(BigField)
-
-Profile.print()
-
-@code_warntype cryptoprime(10)
-SP = sieve_params(200087,0.02,1.3)
-@code_warntype sieve_params(200087,0.02,1.3)
-root(fmpz(3),2)
-@code_warntype Sieve(B,SP)
-
 
 #=
 TODO list so far:
@@ -145,5 +99,3 @@ TODO list so far:
 >> badge smoothneth test -> glatttest (factorisieren)
 
 =#
-
-ENV["JULIA_DEBUG"] = "" # enable debugging

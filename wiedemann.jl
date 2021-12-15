@@ -1,55 +1,72 @@
 using Hecke,Revise
-ENV["JULIA_DEBUG"] = "all" # enable debugging
 revise()
-include("Magma_sieve.jl")
+function wiedemann(A,N,storage=false) # A in Z/NZ ^ n*m
 
-function wiedemann(A,N) # A in Z/NZ ^ n*m
 	RR = ResidueRing(ZZ,N)
 	#TODO reduce mod N = p-1
 	#for now assume N prime (=> Z/NZ field)
-
 	(n,m) = size(A);
 	A = change_base_ring(RR, A)
 	@debug (rank(Matrix(A)) == (m-1)) ? nothing : (@warn("rank A small"),println(rank(Matrix(A))," != m-1 = ",m-1))
-	TA = transpose(A) #later generate random sparse matrix over ZZ
+	TA = transpose(A)
 
 	r = [RR(i) for i in rand(Int8,m)] # later generate random vector over ZZ / sampler ?
 	c = [RR(i) for i in rand(Int8,m)]
 	randlin = transpose([RR(i) for i in rand(Int8,m)])
-	origc = deepcopy(c)
+
 	y = mul(TA,mul(A,r))
 	# solve A^tAx = y2 => x -y in kernel(A^tA) to avoid finding zero vec
 
 	#Wiedemann
 	#TODO store all to save horner sheme
 	#TODO store some and use a little horner sheme
-	seq = [randlin*c]
-	for i = 1:2*n-1
-		c = mul(TA,(mul(A,c))) # generate sequence
-		push!(seq,randlin*c)
+	if storage 
+		#store complete sequence
+		M = zeros(RR,m,2*n)
+		M[:,1] .= c
+		for i = 2:2*n
+			M[:,i] .= mul(TA,(mul(A,M[:,i-1]))) # generate sequence
+		end
+		done,f = Hecke_berlekamp_massey(M[rand(2:m-1),:])
+	else
+		seq = [randlin*c]
+		for i = 1:2*n-1
+			c = mul(TA,(mul(A,c))) # generate sequence
+			push!(seq,randlin*c)
+		end
+		done,f = Hecke_berlekamp_massey(seq)
+	end 
+
+	
+	@debug begin
+		degree = deg(f)
+		@info "WIEDEMANN: def f = $degree where size(A^t*A) = $m"
+		typeof(f) != fmpz || (@warn "ERLEKAMP_MASSEY: f may be constant polynom")
+		done || (@warn "ERLEKAMP_MASSEY: modulus N is not prime, TODO: still catch some gcds")
+		iszero(f(transpose(Matrix(A))*Matrix(A))) ? (@info "BERLEKAMP_MASSEY: valid return") : (@error "BERLEKAMP_MASSEY: unexpected return")
 	end
-	done,f = Hecke_berlekamp_massey(seq)
-	@debug !iszero(f(transpose(Matrix(A))*Matrix(A))) ? (@warn "something wrong with berlekamp-massey return") : nothing
-	@debug !done ? (@warn "modulus N is not prime, TODO: still catch some gcds") : nothing
 
 	delta =0
-	if typeof(f) == fmpz
-		@error "something wrong with polynom f"
-	end
-	while iszero(evaluate(f,0))
+	while iszero(evaluate(f,0)) #TODO collect coeffs:
 		delta+=1
 		f = divexact(f,gen(parent(f)))
 	end
-	@debug delta>1 ? (println(delta), @warn "something wrong with delta delta") : nothing
+
+	@debug delta<2 || (@warn "WIEDEMANN: first nonzero coeff of f is a_$delta")
 	constpartoff = evaluate(f,0)
 	a = -inv(constpartoff)
 	reducedf = divexact(f-constpartoff,gen(parent(f)))
-	compared = a*reducedf(transpose(Matrix(A))*Matrix(A))*y
-	v = mult(a,horner_evaluate(reducedf,TA,A,y))
-	@debug !(y == transpose(Matrix(A))*(Matrix(A)*compared)) ? (@error "compared wrong") : nothing
-	@debug !(y == (mul(TA,(mul(A,v))))) ? (@error "not Ax = y") : nothing
-	@debug !(iszero(mul(TA,(mul(A,v-r))))) ? (@error "not a kernelvec of TA A") : nothing
-	@debug !(iszero(mul(A,v-r))) ? (@error "not a kernelvec of A") : nothing
+	if storage 
+		#TODO 
+		coeff_vec = collect(coefficients(reducedf))
+		v = mult(a,M[:,1:length(coeff_vec)]*coeff_vec)
+	else 
+		v = mult(a,horner_evaluate(reducedf,TA,A,y))
+	end 
+	@debug begin 
+		y == (mul(TA,(mul(A,v)))) ? (@info "WIEDEMANN: Ax = y",true) : (@error "WIEDEMANN Ax = y",false)
+		iszero(mul(A,v-r)) ? (@info "WIEDEMANN: A(v-r) = 0",true) : (@error "WIEDEMANN: A(v-r) = 0",false) 
+	end 
 	return v-r
 end
 
@@ -63,7 +80,7 @@ function horner_evaluate(f,TA,A,c)
 		#s = A^t * A * s + fi * c  inloop
 		s = mul(TA,mul(A,s)) + mult(C[i],c)
 	end
-	@debug !(f(transpose(Matrix(A))*Matrix(A))*c == s) ? (@error "error in horner sheme implementation real value") : nothing
+	@debug f(transpose(Matrix(A))*Matrix(A))*c == s ? (@info "HORNER: f(A^t*A)c = s",true) : (@error  "HORNER: f(A^t*A)c = s",false)
 	return s
 end
 
@@ -81,10 +98,10 @@ function Hecke_berlekamp_massey(L)#::Vector{fmpz})
        return true, g
      end
      f = x^lg
-	 rems = gcd(lift(leading_coefficient(g)),M)
-	 if rems != 1
-		 return (false,rems)
-	 end
+	 #rems = gcd(lift(leading_coefficient(g)),M)
+	 #if rems != 1
+	 #	 return (false,rems)
+	 #end
      N = R_s(inv(leading_coefficient(g))); g1 = g*N
      v0 = Ry(); v1 = Ry(1)
      while lg <= 2*degree(g1)
@@ -92,10 +109,10 @@ function Hecke_berlekamp_massey(L)#::Vector{fmpz})
        if r==0
          N = R_s(1)
        else
-		 rems = gcd(lift(leading_coefficient(r)),M)
-  		 if rems != 1
-  			 return (false,rems)
-  		 end
+		 #rems = gcd(lift(leading_coefficient(r)),M)
+  		 #if rems != 1
+  		 #	 return (false,rems)
+  		 #end
          N = R_s(inv(leading_coefficient(r)))
        end
        v = (v0-q*v1)*N
@@ -111,3 +128,7 @@ function mult(b, V)
   end
   return W
 end
+
+#TODO log degree f, size of m 
+# change horner & save sequence in Matrix.
+#TODO check savesequence implementation (not yet any running test)
