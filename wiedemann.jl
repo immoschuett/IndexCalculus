@@ -120,7 +120,7 @@ function Hecke_berlekamp_massey(L)#::Vector{fmpz})
      end
      return true, divexact(v1, leading_coefficient(v1))
 end
-
+#TODO using .*
 function mult(b, V)
   W = deepcopy(V)
   for i=1:length(W)

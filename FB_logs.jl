@@ -1,7 +1,7 @@
 using Hecke,Nemo,Revise,Profile
 include("Magma_sieve.jl"),include("wiedemann.jl")
 revise()
-ENV["JULIA_DEBUG"] = "all" # enable debugging , disable: ENV["JULIA_DEBUG"] = ""
+ENV["JULIA_DEBUG"] = "" # enable debugging , disable: ENV["JULIA_DEBUG"] = ""
 
 function check_logdict(F,D,Q)
     for q in Q 
@@ -12,8 +12,8 @@ end
 
 function cryptoprime(N)
     #return a Prime p with N digits. s.t (p-1)/2 is prime
-    p = fmpz(10)^N
-    while true 
+    p = rand(fmpz(10)^(N-1):fmpz(10)^N)
+    while true
         p = next_prime(p+1)
         !isprime(div(p-1,2)) || return p
     end 
@@ -99,3 +99,27 @@ TODO list so far:
 >> badge smoothneth test -> glatttest (factorisieren)
 
 =#
+
+p = cryptoprime(11)
+TESTFIELD = FField(GF(p),primitive_elem(GF(p),true))
+@time FB_logs(TESTFIELD)
+@profile FB_logs(TESTFIELD)
+#~5 minutes. for p = cryptoprime(20) 
+#~34,5 minutes. for p = 3088833293915623767369443
+Profile.print(format=:flat)
+
+function check_logdict_after(F,D)
+    for (q,d) in D
+        F.a^D[q] == q || return false 
+    end 
+    return true 
+end
+check_logdict_after(TESTFIELD,a)
+Profile.print(:flat)
+
+
+
+@time disc_log_bs_gs(primitive_elem(GF(p),true), GF(p)(449), fmpz(64768854538896063587))
+#start ca. 01:00
+#abbruch ca. 01:15 
+#Preallovation of Memory... 
