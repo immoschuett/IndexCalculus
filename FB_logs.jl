@@ -1,7 +1,7 @@
 using Hecke,Nemo,Revise,Profile,Markdown
 include("Magma_sieve.jl"),include("wiedemann.jl")
 revise()
-ENV["JULIA_DEBUG"] = "all" # enable debugging , disable: ENV["JULIA_DEBUG"] = ""
+ENV["JULIA_DEBUG"] = "" # enable debugging = "all" , disable:  = ""
 
 function check_logdict(F,D,Q)
     for q in Q 
@@ -20,10 +20,10 @@ function cryptoprime(N)
 end 
 
 @doc Markdown.doc"""
-    FB_logs(F::FField) -> Tuple{Dict{fmpz, fmpz}, Vector{fmpz_mod}, FactorBase{fmpz}}
+    FB_logs(F::FField,storage=false) -> Tuple{Dict{fmpz, fmpz}, Vector{fmpz_mod}, FactorBase{fmpz}}
 Compute a  `Factorbase` and a Dict of its `discrete logarithms` using a Indexcalculus algorithm.
 """
-function FB_logs(F::FField)
+function FB_logs(F::FField,storage=false)
     #for F FField find FB,FB_logs,FB_array
     p = length(F.K)
     modulus_ = fmpz((p-1)/2)
@@ -33,7 +33,7 @@ function FB_logs(F::FField)
     @debug c == 1 || (@error "FB_LOGS: 2 ,(p-1)/2 not coprime")
 
     #Sieve relations:
-    SP = sieve_params(p,0.02,1.3)
+    SP = sieve_params(p,0.02,1.15)
     RELMat,FB,FB_x,l = Sieve(F,SP)
 
     #get kernel mod p-1 / 2 
@@ -42,7 +42,7 @@ function FB_logs(F::FField)
     #dim,kern = kernel(Matrix(RELMat)) #TODO wiedemann CRT here
     #@debug dim == 1 || (@warn "dim(ker(A)mod(p-1)/2) > 1")
     @label retour
-    kern = wiedemann(RELMat,modulus_)
+    kern = wiedemann(RELMat,modulus_,storage)
     #TODO exeption if too many loops... / probably inf running time if kernel trivial
     @debug iszero(kern) ? (@info "FB_LOGS: trivial found trivial kernel") : (@info "FB_LOGS: succeded wiedemann")
     !iszero(kern) || @goto retour
@@ -69,8 +69,10 @@ function FB_logs(F::FField)
     Logdict = Dict(zip(Q,L))
     @debug begin 
         check_logdict(F,Logdict,Q) ? (@info "FB_LOGS: Log_dict correct") : (@error "FB_LOGS: Log_dict incorrect")
-        length(Logdict) == l ? (@info "FB_LOGS: all FB logs found") : (@warn "FB_LOGS: at least " print(length(Logdict)-l) " not found")
+        length(Logdict) == l ? (@info "FB_LOGS: all FB logs found") : (@warn "FB_LOGS: at least $(length(Logdict)-l) logarithms not found")
     end 
+    check_logdict(F,Logdict,Q) ? (@info "FB_LOGS: Log_dict correct") : (@error "FB_LOGS: Log_dict incorrect")
+    length(Logdict) == l ? (@info "FB_LOGS: all FB logs found") : (@warn "FB_LOGS: at least $(length(Logdict)-l) logarithms not found") 
     return Logdict,kern,FactorBase(Q)
 end
 @doc Markdown.doc"""
@@ -112,10 +114,10 @@ TODO list so far:
 
 =#
 
-p = cryptoprime(9)
+p = cryptoprime(20)
 TESTFIELD = FField(GF(p),primitive_elem(GF(p),true))
-FB_logs(TESTFIELD)
-@profile FB_logs(TESTFIELD)
+@time FB_logs(TESTFIELD,false)
+@time FB_logs(TESTFIELD,true)
 #~5 minutes. for p = cryptoprime(20) 
 #~34,5 minutes. for p = 3088833293915623767369443
 Profile.print(format=:flat)

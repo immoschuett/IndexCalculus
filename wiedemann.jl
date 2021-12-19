@@ -13,7 +13,10 @@ function wiedemann(A,N,storage=false) # A in Z/NZ ^ n*m
 	#for now assume N prime (=> Z/NZ field)
 	(n,m) = size(A);
 	A = change_base_ring(RR, A)
-	@debug (rank(Matrix(A)) == (m-1)) ? nothing : (@warn("WIEDEMANN: rank A small"),println(rank(Matrix(A))," != m-1 = ",m-1))
+	@debug begin 
+		r = rank(Matrix(A))
+		r == (m-1) ? nothing : @warn("WIEDEMANN: rank A small with rank(A) =$r != m-1 = $(m-1)")
+	end
 	TA = transpose(A)
 
 	r = rand(RR, m) # later generate random vector over ZZ / sampler ?
@@ -30,13 +33,17 @@ function wiedemann(A,N,storage=false) # A in Z/NZ ^ n*m
 		#store complete sequence
 		M = zeros(RR,m,2*n)					 #preallocation in store
 		k = @view M[:,1]
-		k = c
+		k .= y   							 #generate sequence with y first to use later
 		for i = 2:2*n
 			M_last = @view M[:,i-1]			 
 			M_i = @view M[:,i]				 #reduce allocations here
 			M_i .= mul(TA,(mul(A,M_last)))   #generate sequence
 		end
-		done,f = Hecke_berlekamp_massey(M[rand(2:m-1),:])
+		@label stepback
+		a = rand(2:m-1)
+		!iszero(@view M[a,:]) || @goto stepback
+		G = deepcopy(M[a,:])
+		done,f = Hecke_berlekamp_massey(G)
 	else
 		seq = zeros(RR,2*n)
 		seq0 = @view seq[1]
@@ -55,7 +62,8 @@ function wiedemann(A,N,storage=false) # A in Z/NZ ^ n*m
 		@info "WIEDEMANN: deg f = $degr where size(A^t*A) = $m"
 		typeof(f) != fmpz || (@warn "ERLEKAMP_MASSEY: f may be constant polynom")
 		done || (@warn "ERLEKAMP_MASSEY: modulus N is not prime, TODO: still catch some gcds")
-		iszero(f(transpose(Matrix(A))*Matrix(A))) ? (@info "BERLEKAMP_MASSEY: valid return") : (@error "BERLEKAMP_MASSEY: unexpected return")
+		iszero(f(transpose(Matrix(A))*Matrix(A)))||iszero(f(transpose(Matrix(A))*Matrix(A))*y) ? (@info "BERLEKAMP_MASSEY: valid return") : (@error "BERLEKAMP_MASSEY: unexpected return")
+		#note that second case only necesarry for debug storage.
 	end
 
 	delta =0
@@ -71,7 +79,8 @@ function wiedemann(A,N,storage=false) # A in Z/NZ ^ n*m
 	if storage 
 		#TODO 
 		coeff_vec = collect(coefficients(reducedf))
-		v = (M[:,1:length(coeff_vec)]*coeff_vec).*a
+		T = @view M[:,1:length(coeff_vec)]
+		v = (T*coeff_vec).*a
 	else 
 		v = horner_evaluate(reducedf,TA,A,y).*a
 	end 
