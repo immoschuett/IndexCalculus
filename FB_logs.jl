@@ -30,7 +30,7 @@ function FB_logs(F::FField)
     two = fmpz(2)
     RR = ResidueRing(ZZ,modulus_)
     c,u,v = gcdx(two,modulus_)
-    @debug c == 1 || (@error "2 ,(p-1)/2 not coprime")
+    @debug c == 1 || (@error "FB_LOGS: 2 ,(p-1)/2 not coprime")
 
     #Sieve relations:
     SP = sieve_params(p,0.02,1.3)
@@ -44,7 +44,7 @@ function FB_logs(F::FField)
     @label retour
     kern = wiedemann(RELMat,modulus_)
     #TODO exeption if too many loops... / probably inf running time if kernel trivial
-    @debug iszero(kern) ? (@info "trivial found trivial kernel") : (@info "succeded wiedemann")
+    @debug iszero(kern) ? (@info "FB_LOGS: trivial found trivial kernel") : (@info "FB_LOGS: succeded wiedemann")
     !iszero(kern) || @goto retour
     #return inv(v[1]).*v
     #reconstruct mod p (note this works here if (p-1)/2 prime) Only 2 checks necesarry.
@@ -68,8 +68,8 @@ function FB_logs(F::FField)
     #Indx = Dict(zip(Q,[i  for i=1:length(Q)]))
     Logdict = Dict(zip(Q,L))
     @debug begin 
-        check_logdict(F,Logdict,Q) ? (@info "FBLOGS: Log_dict correct") : (@error "FBLOGS: Log_dict incorrect")
-        length(Logdict) ==l ? (@info "FBLOGS: all FB logs found") : (@warn "FBLOGS: at least " print(length(Logdict)-l) " not found")
+        check_logdict(F,Logdict,Q) ? (@info "FB_LOGS: Log_dict correct") : (@error "FB_LOGS: Log_dict incorrect")
+        length(Logdict) ==l ? (@info "FB_LOGS: all FB logs found") : (@warn "FB_LOGS: at least " print(length(Logdict)-l) " not found")
     end 
     return Logdict,kern,FactorBase(Q)
 end
