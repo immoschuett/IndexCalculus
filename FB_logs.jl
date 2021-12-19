@@ -69,11 +69,14 @@ function FB_logs(F::FField)
     Logdict = Dict(zip(Q,L))
     @debug begin 
         check_logdict(F,Logdict,Q) ? (@info "FB_LOGS: Log_dict correct") : (@error "FB_LOGS: Log_dict incorrect")
-        length(Logdict) ==l ? (@info "FB_LOGS: all FB logs found") : (@warn "FB_LOGS: at least " print(length(Logdict)-l) " not found")
+        length(Logdict) == l ? (@info "FB_LOGS: all FB logs found") : (@warn "FB_LOGS: at least " print(length(Logdict)-l) " not found")
     end 
     return Logdict,kern,FactorBase(Q)
 end
-
+@doc Markdown.doc"""
+    Indiv_Log(F,FB,FB_logs,h) -> Tuple{Dict{fmpz, fmpz}, Vector{fmpz_mod}, FactorBase{fmpz}}
+Compute the discrete logarithm $log_F.a(h)$ i.e. compute an `x` s.t. `F.a^x = h` given a Factorbase FB with corresponding logarithms in FB_logs using a #TODO sieve.
+"""
 function Indiv_Log(F,FB,FB_logs,h)
     #return log_a(h) i.e x s.t a^x = h
     p = length(F.K)
