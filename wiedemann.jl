@@ -10,9 +10,9 @@ function wiedemann(A,N,storage=false) # A in Z/NZ ^ n*m
 	@debug (rank(Matrix(A)) == (m-1)) ? nothing : (@warn("WIEDEMANN: rank A small"),println(rank(Matrix(A))," != m-1 = ",m-1))
 	TA = transpose(A)
 
-	r = [RR(i) for i in rand(Int8,m)] # later generate random vector over ZZ / sampler ?
-	c = [RR(i) for i in rand(Int8,m)]
-	randlin = transpose([RR(i) for i in rand(Int8,m)])
+	r = rand(RR, m) # later generate random vector over ZZ / sampler ?
+	c = rand(RR, m)
+	randlin = transpose(rand(RR, m)) #or as (1,m) matrix ?
 
 	y = mul(TA,mul(A,r))
 	# solve A^tAx = y2 => x -y in kernel(A^tA) to avoid finding zero vec
@@ -53,21 +53,21 @@ function wiedemann(A,N,storage=false) # A in Z/NZ ^ n*m
 	end
 
 	delta =0
-	while iszero(evaluate(f,0)) #TODO collect coeffs:
+	while iszero(coeff(f,0)) #TODO collect coeffs:
 		delta+=1
 		f = divexact(f,gen(parent(f)))
 	end
 
 	@debug delta<2 || (@warn "WIEDEMANN: first nonzero coeff of f is a_$delta")
-	constpartoff = evaluate(f,0)
+	constpartoff = coeff(f,0)
 	a = -inv(constpartoff)
 	reducedf = divexact(f-constpartoff,gen(parent(f)))
 	if storage 
 		#TODO 
 		coeff_vec = collect(coefficients(reducedf))
-		v = mult(a,M[:,1:length(coeff_vec)]*coeff_vec)
+		v = (M[:,1:length(coeff_vec)]*coeff_vec).*a
 	else 
-		v = mult(a,horner_evaluate(reducedf,TA,A,y))
+		v = horner_evaluate(reducedf,TA,A,y).*a
 	end 
 	@debug begin 
 		y == (mul(TA,(mul(A,v)))) ? (@info "WIEDEMANN: Ax = y",true) : (@error "WIEDEMANN Ax = y",false)
@@ -81,10 +81,10 @@ function horner_evaluate(f,TA,A,c)
 	#return f(A^t *A)*c
 	C = collect(coefficients(f))
 	n = length(C)
-	s = mult(C[end],mul(TA,mul(A,c)))+mult(C[end-1],c)
+	s = mul(TA,mul(A,c)).*C[end]+ c.*C[end-1]
 	for i = n-2:-1:1   #WARNING a_0 in papers, but a_1 in julia
 		#s = A^t * A * s + fi * c  inloop
-		s = mul(TA,mul(A,s)) + mult(C[i],c)
+		s = mul(TA,mul(A,s)) + c.*C[i]
 	end
 	@debug f(transpose(Matrix(A))*Matrix(A))*c == s ? (@info "HORNER: f(A^t*A)c = s",true) : (@error  "HORNER: f(A^t*A)c = s",false)
 	return s
@@ -125,14 +125,6 @@ function Hecke_berlekamp_massey(L)#::Vector{fmpz})
        v0 = v1; v1 = v; f = g1; g1= r*N
      end
      return true, divexact(v1, leading_coefficient(v1))
-end
-#TODO using .*
-function mult(b, V)
-  W = deepcopy(V)
-  for i=1:length(W)
-    W[i]*=b
-  end
-  return W
 end
 
 #TODO log degree f, size of m 

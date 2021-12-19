@@ -108,8 +108,6 @@ TODO list so far:
 p = cryptoprime(11)
 TESTFIELD = FField(GF(p),primitive_elem(GF(p),true))
 FB_logs(TESTFIELD)
-A,B,C = FB_logs(TESTFIELD)
-wiedemann(A,N)
 @profile FB_logs(TESTFIELD)
 #~5 minutes. for p = cryptoprime(20) 
 #~34,5 minutes. for p = 3088833293915623767369443
