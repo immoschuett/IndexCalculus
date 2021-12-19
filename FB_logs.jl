@@ -1,7 +1,7 @@
 using Hecke,Nemo,Revise,Profile
 include("Magma_sieve.jl"),include("wiedemann.jl")
 revise()
-ENV["JULIA_DEBUG"] = "" # enable debugging , disable: ENV["JULIA_DEBUG"] = ""
+ENV["JULIA_DEBUG"] = "all" # enable debugging , disable: ENV["JULIA_DEBUG"] = ""
 
 function check_logdict(F,D,Q)
     for q in Q 
@@ -94,6 +94,11 @@ TODO list so far:
 >> Implement block wiedemann for faster performanve 
 >> implement sieve for faster finding l for individual logs
 
+#REMARKS
+ do we really need to save FB_x ? maybe only index 
+ use original FB to recover logs.
+ length(FB.base) for length
+
 #Further notes:
 >> flog,clog,iroot
 >> badge smoothneth test -> glatttest (factorisieren)
@@ -102,7 +107,9 @@ TODO list so far:
 
 p = cryptoprime(11)
 TESTFIELD = FField(GF(p),primitive_elem(GF(p),true))
-@time FB_logs(TESTFIELD)
+FB_logs(TESTFIELD)
+A,B,C = FB_logs(TESTFIELD)
+wiedemann(A,N)
 @profile FB_logs(TESTFIELD)
 #~5 minutes. for p = cryptoprime(20) 
 #~34,5 minutes. for p = 3088833293915623767369443
