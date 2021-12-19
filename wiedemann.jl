@@ -1,5 +1,11 @@
-using Hecke,Revise
+using Hecke,Revise,Markdown
 revise()
+
+@doc Markdown.doc"""
+    wiedemann(A,N,storage=false) -> Vector{fmpz_mod}
+Compute a (nontrivial) `kernelvector` $v$ s.t $Av = 0$ mod $N$.
+$N$ should be a prime.
+"""
 function wiedemann(A,N,storage=false) # A in Z/NZ ^ n*m
 
 	RR = ResidueRing(ZZ,N)

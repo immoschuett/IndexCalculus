@@ -1,4 +1,4 @@
-using Hecke,Nemo,Revise,Profile
+using Hecke,Nemo,Revise,Profile,Markdown
 include("Magma_sieve.jl"),include("wiedemann.jl")
 revise()
 ENV["JULIA_DEBUG"] = "all" # enable debugging , disable: ENV["JULIA_DEBUG"] = ""
@@ -19,6 +19,10 @@ function cryptoprime(N)
     end 
 end 
 
+@doc Markdown.doc"""
+    FB_logs(F::FField) -> Tuple{Dict{fmpz, fmpz}, Vector{fmpz_mod}, FactorBase{fmpz}}
+Compute a  `Factorbase` and a Dict of its `discrete logarithms` using a Indexcalculus algorithm.
+"""
 function FB_logs(F::FField)
     #for F FField find FB,FB_logs,FB_array
     p = length(F.K)
@@ -105,7 +109,7 @@ TODO list so far:
 
 =#
 
-p = cryptoprime(11)
+p = cryptoprime(9)
 TESTFIELD = FField(GF(p),primitive_elem(GF(p),true))
 FB_logs(TESTFIELD)
 @profile FB_logs(TESTFIELD)

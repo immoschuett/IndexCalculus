@@ -8,16 +8,37 @@ Fachpraktikum = UInt32(0x00000001001) #v0x00.001.001
 #TODO insert abstract type control in all functions
 ##
 
-using Hecke,Nemo,Revise
+using Hecke,Nemo,Revise,Markdown
 revise()
 ##
-
+@doc Markdown.doc"""
+    abstract type DLP
+special type for `Discrete Logarithm Problem`
+"""
 abstract type DLP end
-
+@doc Markdown.doc"""
+    FField<:DLP
+A FFIELD $F$ with Fields
+```jldoctest
+F.K::Nemo.GaloisFmpzField `finite Field`
+F.a::gfp_fmpz_elem `primitive element` 
+```
+"""
 mutable struct FField<:DLP
 	K::Nemo.GaloisFmpzField
 	a::gfp_fmpz_elem #primitive element
 end
+@doc Markdown.doc"""
+    Sparam<:DLP
+Sieveparameters $S$ with Fields
+```jldoctest
+S.qlimit::Int6
+S.climit::Int64
+S.ratio::Float64
+S.inc::Tuple{Int64, Int64} `step increasing parameters` 
+```
+generated with `sieve_params(p,eps::Float64,ratio::Float64)`
+"""
 mutable struct Sparam<:DLP
 	qlimit::Int64
 	climit::Int64
@@ -25,8 +46,6 @@ mutable struct Sparam<:DLP
 	inc::Tuple{Int64, Int64} #for increasing of Sparam
 end
 
-
-##
 function primitive_elem(K::FinField,first::Bool) #TODO implement compatible for Abstract field or Nemo.GaloisfmpzField
     #returns a (the first) generator alpha of K° s.t. lift(alpha) is prime in ZZ
     p = length(K)
@@ -72,7 +91,9 @@ function sieve_params(p,eps::Float64,ratio::Float64)
 	return Sparam(qlimit,climit,ratio,steps)
 end
 
-
+@doc Markdown.doc"""
+    Sieve(F::FField,sieveparams::Sparam) -> A,FB? TODO work in progress
+Sieve a relation matrix $A$ s.t `ker(A)` includes all `discrete logarithms` of $FB$-elements"""
 function Sieve(F::FField,sieveparams::Sparam)
     @debug @info "SIEVE: starting Sieve"
     p = characteristic(F.K) #(p = Int(length(A.K)))
