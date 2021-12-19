@@ -7,7 +7,7 @@ function wiedemann(A,N,storage=false) # A in Z/NZ ^ n*m
 	#for now assume N prime (=> Z/NZ field)
 	(n,m) = size(A);
 	A = change_base_ring(RR, A)
-	@debug (rank(Matrix(A)) == (m-1)) ? nothing : (@warn("rank A small"),println(rank(Matrix(A))," != m-1 = ",m-1))
+	@debug (rank(Matrix(A)) == (m-1)) ? nothing : (@warn("WIEDEMANN: rank A small"),println(rank(Matrix(A))," != m-1 = ",m-1))
 	TA = transpose(A)
 
 	r = [RR(i) for i in rand(Int8,m)] # later generate random vector over ZZ / sampler ?
@@ -22,25 +22,31 @@ function wiedemann(A,N,storage=false) # A in Z/NZ ^ n*m
 	#TODO store some and use a little horner sheme
 	if storage 
 		#store complete sequence
-		M = zeros(RR,m,2*n)
-		M[:,1] .= c
+		M = zeros(RR,m,2*n)					 #preallocation in store
+		k = @view M[:,1]
+		k = c
 		for i = 2:2*n
-			M[:,i] .= mul(TA,(mul(A,M[:,i-1]))) # generate sequence
+			M_last = @view M[:,i-1]			 
+			M_i = @view M[:,i]				 #reduce allocations here
+			M_i .= mul(TA,(mul(A,M_last)))   #generate sequence
 		end
 		done,f = Hecke_berlekamp_massey(M[rand(2:m-1),:])
 	else
-		seq = [randlin*c]
-		for i = 1:2*n-1
+		seq = zeros(RR,2*n)
+		seq0 = @view seq[1]
+		seq0 .= randlin*c 					#preallocate here
+		for i = 2:2*n
+			seqi = @view seq[i]
 			c = mul(TA,(mul(A,c))) # generate sequence
-			push!(seq,randlin*c)
+			seqi .= randlin*c
 		end
 		done,f = Hecke_berlekamp_massey(seq)
 	end 
 
 	
 	@debug begin
-		degree = deg(f)
-		@info "WIEDEMANN: def f = $degree where size(A^t*A) = $m"
+		degr = degree(f)
+		@info "WIEDEMANN: deg f = $degr where size(A^t*A) = $m"
 		typeof(f) != fmpz || (@warn "ERLEKAMP_MASSEY: f may be constant polynom")
 		done || (@warn "ERLEKAMP_MASSEY: modulus N is not prime, TODO: still catch some gcds")
 		iszero(f(transpose(Matrix(A))*Matrix(A))) ? (@info "BERLEKAMP_MASSEY: valid return") : (@error "BERLEKAMP_MASSEY: unexpected return")

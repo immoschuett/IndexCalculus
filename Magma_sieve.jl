@@ -46,7 +46,7 @@ function primitive_elem(K::FinField,first::Bool) #TODO implement compatible for 
     end
 end
 
-function verify_primitive_elem(elem,K::Nemo.GaloisField)
+function verify_primitive_elem(elem,K::Nemo.GaloisFmpzField)
 	!iszero(elem) || return false
     p = Int(length(K))
     for i = 1:p-2
@@ -85,7 +85,8 @@ function Sieve(F::FField,sieveparams::Sparam)
 
     #FB[findfirst(isequal(lift(alpha))] FB[1] = lift(alpha), FB[]
     indx = findfirst(isequal(lift(F.a)),fb_primes)
-    FB = vcat([lift(F.a)],deleteat!(fb_primes,indx)) # tauschen a[1] = a[2] , a[2] = [1]
+    FB = vcat([lift(F.a)],deleteat!(fb_primes,indx)) # tauschen a[1] = a[2] , a[2] = [1] 
+    # use shift! / unshift! here...
     log2 = log(2.0);
     logqs = [log(q)/log2 for q in FB] #real logarithms for sieve 
     FBs = deepcopy(FactorBase(FB))
@@ -93,7 +94,7 @@ function Sieve(F::FField,sieveparams::Sparam)
     l = deepcopy(l2)
     Indx = Dict(zip(FB,[i for i=1:l])) #Index in a dictionary
     A = sparse_matrix(ZZ)
-
+    #GENERAL IDEA: dont add logs. add INT counter, then add cnt * log in the end.
     for c1 = 1:sieveparams.climit
         nrows(A)/length(FB) < sieveparams.ratio || break
         sieve = zeros(sieveparams.climit)
