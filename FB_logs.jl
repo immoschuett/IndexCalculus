@@ -1,7 +1,7 @@
 using Hecke,Nemo,Revise,Profile,Markdown
 include("Magma_sieve.jl"),include("wiedemann.jl")
 revise()
-ENV["JULIA_DEBUG"] = "" # enable debugging = "all" , disable:  = ""
+ENV["JULIA_DEBUG"] = "all" # enable debugging = "all" , disable:  = ""
 
 function check_logdict(F,D,Q)
     for q in Q 
@@ -124,7 +124,28 @@ TODO list so far:
 ## Examples:
 
 
-p = cryptoprime(20)
+
+
+#~5 minutes. for p = cryptoprime(20) 
+#~34,5 minutes. for p = 3088833293915623767369443
+
+
+function check_logdict_after(F,D)
+    for (q,d) in D
+        F.a^D[q] == q || return false 
+    end 
+    return true 
+end
+
+#start ca. 01:00
+#abbruch ca. 01:15 
+#Preallovation of Memory... 
+
+
+include("FB_logs.jl")
+
+#ENV["JULIA_DEBUG"] = ""
+p = cryptoprime(10)
 TESTFIELD = FField(GF(p),primitive_elem(GF(p),true))
 
 @profile (@debug @info "ok")
@@ -134,51 +155,3 @@ TESTFIELD = FField(GF(p),primitive_elem(GF(p),true))
 Profile.clear() 
 @profile FB_logs(TESTFIELD,false)
 Profile.print(format= :flat, sortedby = :count, C = !true)
-
-@profile FB_logs(TESTFIELD,true)
-Profile.clear() 
-@profile FB_logs(TESTFIELD,true)
-Profile.print( sortedby = :count, C = !true)
-
-
-#~5 minutes. for p = cryptoprime(20) 
-#~34,5 minutes. for p = 3088833293915623767369443
-Profile.print(format=:flat)
-
-function check_logdict_after(F,D)
-    for (q,d) in D
-        F.a^D[q] == q || return false 
-    end 
-    return true 
-end
-check_logdict_after(TESTFIELD,a)
-Profile.print(:flat)
-
-
-
-@time disc_log_bs_gs(primitive_elem(GF(p),true), GF(p)(449), fmpz(64768854538896063587))
-#start ca. 01:00
-#abbruch ca. 01:15 
-#Preallovation of Memory... 
-
-p = cryptoprime(20)
-TESTFIELD = FField(GF(p),primitive_elem(GF(p),true))
-P2 = length(TESTFIELD.K)
-sieveparams = sieve_params(P2,0.02,1.1)
-
-fb_primes = [i for i in PrimesSet(1,sieveparams.qlimit)]
-
-
-
-using Profile
-
-@profile ...
-
-Profile.clear() 
-
-@profile ...
-Profile.print(format= :flat, sortedby = :count, C = !true)
-
-
-
-"C:\Users\immos\AppData\Local\Programs\Julia-1.6.1\bin\julia.exe '-i', '--banner=no', '--project=C:\Users\immos\.julia\environments\v1.6', 'c:\Users\immos\.vscode\extensions\julialang.language-julia-1.5.6\scripts\terminalserver\terminalserver.jl', '\\.\pipe\vsc-jl-repl-bc3b9854-38c2-4181-a585-3abf741488d8', '\\.\pipe\vsc-jl-cr-07c33181-e4b2-4b9b-bb72-cbc361906f97', 'USE_REVISE=true', 'USE_PLOTPANE=true', 'USE_PROGRESS=true', 'DEBUG_MODE=false'" terminated with exit code: 3221225727.
