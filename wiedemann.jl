@@ -22,13 +22,10 @@ function wiedemann(A,N,storage=false) # A in Z/NZ ^ n*m
 	r = rand(RR, m) # later generate random vector over ZZ / sampler ?
 	c = rand(RR, m)
 	randlin = transpose(rand(RR, m)) #or as (1,m) matrix ?
-
 	y = mul(TA,mul(A,r))
 	# solve A^tAx = y2 => x -y in kernel(A^tA) to avoid finding zero vec
 
 	#Wiedemann
-	#TODO store all to save horner sheme
-	#TODO store some and use a little horner sheme
 	if storage 
 		#store complete sequence
 		M = zeros(RR,m,2*n)					 #preallocation in store
@@ -63,7 +60,7 @@ function wiedemann(A,N,storage=false) # A in Z/NZ ^ n*m
 		typeof(f) != fmpz || (@warn "ERLEKAMP_MASSEY: f may be constant polynom")
 		done || (@warn "ERLEKAMP_MASSEY: modulus N is not prime, TODO: still catch some gcds")
 		iszero(f(transpose(Matrix(A))*Matrix(A)))||iszero(f(transpose(Matrix(A))*Matrix(A))*y) ? (@info "BERLEKAMP_MASSEY: valid return") : (@error "BERLEKAMP_MASSEY: unexpected return")
-		#note that second case only necesarry for debug storage.
+		#note that second case appears only for debugging storage.(since sequence beginss with A*r)
 	end
 
 	delta =0

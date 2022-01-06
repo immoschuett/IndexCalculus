@@ -85,11 +85,17 @@ function sieve_params(p,eps::Float64,ratio::Float64)
 	qlimit *= log(qlimit) # since aproximately    #primes
 	climit = exp((0.5+eps)*sqrt(log(p)*log(log(p))))
 
-	qlimit = ceil(max(qlimit,30))
+	qlimit = ceil(0.5*max(qlimit,30))
 	climit = ceil(max(climit,35))
-	steps = (ceil(0.15 * sqrt(p)/qlimit),ceil(0.15 * sqrt(p)/(log(climit)*climit)))
+	steps = (100,100)
 	return Sparam(qlimit,climit,ratio,steps)
 end
+
+function set_sieve_params(q::Int64,c::Int64,r::Float64,i::Tuple{Int64, Int64})
+    #later some stuff here
+    return Sparam(q,c,r,i)
+end 
+
 
 @doc Markdown.doc"""
     Sieve(F::FField,sieveparams::Sparam) -> A,FB? TODO work in progress
@@ -208,7 +214,7 @@ function Sieve(F::FField,sieveparams::Sparam)
 end
 
 function check_relation_mat(K,A,FB)
-    p = Int(length(K))
+    p = BigInt(length(K))
     for k = 1:nrows(A)
         prod = 1
         for i = 1:length(FB)
@@ -223,3 +229,9 @@ function check_relation_mat(K,A,FB)
     end
     return true
 end
+
+#TODO instead invcrease steps. 
+#use @goto increase c limit 
+# dont sieve again all this stuff.
+#dynamic sieving. 
+#write expanding iterator 

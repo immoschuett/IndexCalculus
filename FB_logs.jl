@@ -33,16 +33,22 @@ function FB_logs(F::FField,storage=false)
     @debug c == 1 || (@error "FB_LOGS: 2 ,(p-1)/2 not coprime")
 
     #Sieve relations:
-    SP = sieve_params(p,0.02,1.15)
+    SP = sieve_params(p,0.02,1.1)
     RELMat,FB,FB_x,l = Sieve(F,SP)
 
     #get kernel mod p-1 / 2 
     RELMat = change_base_ring(RR,RELMat)
-    #n,m = size(RELMat);
+    n,m = size(RELMat)
+    @debug @info "FB_LOGS: size of RELMAT before PrePro§; size(A) = $n x $m"
+
     #dim,kern = kernel(Matrix(RELMat)) #TODO wiedemann CRT here
     #@debug dim == 1 || (@warn "dim(ker(A)mod(p-1)/2) > 1")
+
+    cnt = 0
     @label retour
     kern = wiedemann(RELMat,modulus_,storage)
+    cnt+=1
+    cnt < 5 || return Dict{fmpz, fmpz}([]),Vector{fmpz_mod}([]),FactorBase(fmpz[])
     #TODO exeption if too many loops... / probably inf running time if kernel trivial
     @debug iszero(kern) ? (@info "FB_LOGS: trivial found trivial kernel") : (@info "FB_LOGS: succeded wiedemann")
     !iszero(kern) || @goto retour
@@ -102,6 +108,7 @@ TODO list so far:
 >> optimize with  @profile
 >> Implement block wiedemann for faster performanve 
 >> implement sieve for faster finding l for individual logs
+>> Preprocess >>> get A to be squared and sparse. then wie can save some time in wiedemann.
 
 #REMARKS
  do we really need to save FB_x ? maybe only index 
@@ -114,10 +121,26 @@ TODO list so far:
 
 =#
 
+## Examples:
+
+
 p = cryptoprime(20)
 TESTFIELD = FField(GF(p),primitive_elem(GF(p),true))
+
+@profile (@debug @info "ok")
 @time FB_logs(TESTFIELD,false)
-@time FB_logs(TESTFIELD,true)
+
+@profile FB_logs(TESTFIELD,false)
+Profile.clear() 
+@profile FB_logs(TESTFIELD,false)
+Profile.print(format= :flat, sortedby = :count, C = !true)
+
+@profile FB_logs(TESTFIELD,true)
+Profile.clear() 
+@profile FB_logs(TESTFIELD,true)
+Profile.print( sortedby = :count, C = !true)
+
+
 #~5 minutes. for p = cryptoprime(20) 
 #~34,5 minutes. for p = 3088833293915623767369443
 Profile.print(format=:flat)
@@ -137,3 +160,25 @@ Profile.print(:flat)
 #start ca. 01:00
 #abbruch ca. 01:15 
 #Preallovation of Memory... 
+
+p = cryptoprime(20)
+TESTFIELD = FField(GF(p),primitive_elem(GF(p),true))
+P2 = length(TESTFIELD.K)
+sieveparams = sieve_params(P2,0.02,1.1)
+
+fb_primes = [i for i in PrimesSet(1,sieveparams.qlimit)]
+
+
+
+using Profile
+
+@profile ...
+
+Profile.clear() 
+
+@profile ...
+Profile.print(format= :flat, sortedby = :count, C = !true)
+
+
+
+"C:\Users\immos\AppData\Local\Programs\Julia-1.6.1\bin\julia.exe '-i', '--banner=no', '--project=C:\Users\immos\.julia\environments\v1.6', 'c:\Users\immos\.vscode\extensions\julialang.language-julia-1.5.6\scripts\terminalserver\terminalserver.jl', '\\.\pipe\vsc-jl-repl-bc3b9854-38c2-4181-a585-3abf741488d8', '\\.\pipe\vsc-jl-cr-07c33181-e4b2-4b9b-bb72-cbc361906f97', 'USE_REVISE=true', 'USE_PLOTPANE=true', 'USE_PROGRESS=true', 'DEBUG_MODE=false'" terminated with exit code: 3221225727.
