@@ -141,17 +141,3 @@ end
 #abbruch ca. 01:15 
 #Preallovation of Memory... 
 
-
-include("FB_logs.jl")
-
-#ENV["JULIA_DEBUG"] = ""
-p = cryptoprime(10)
-TESTFIELD = FField(GF(p),primitive_elem(GF(p),true))
-
-@profile (@debug @info "ok")
-@time FB_logs(TESTFIELD,false)
-
-@profile FB_logs(TESTFIELD,false)
-Profile.clear() 
-@profile FB_logs(TESTFIELD,false)
-Profile.print(format= :flat, sortedby = :count, C = !true)
