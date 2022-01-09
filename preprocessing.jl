@@ -107,7 +107,7 @@ function sp_preprocessing(A, l) #where l denotes the length of the original fact
     A = transpose(delete_zero_rows(TA,l+1))
     return A, TA
 end
-
+#TODO: implement further steps of structured Gauss and test efficiency
 
 
 #Example matrix from Sieve
