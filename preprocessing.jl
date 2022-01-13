@@ -108,9 +108,9 @@ function sp_preprocessing(A, l) #where l denotes the length of the original fact
             end
         end
     end
-    #A = delete_zero_rows(A)
-    #TA = transpose(A)
-    #A = transpose(delete_zero_rows(TA,l+1))
+    A = delete_zero_rows(A)
+    TA = transpose(A)
+    A = transpose(delete_zero_rows(TA,l+1))
     #TODO: A.cols anpassen
     return A
 end
