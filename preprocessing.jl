@@ -94,7 +94,7 @@ function sp_preprocessing(A, l) #where l denotes the length of the original fact
     while !done
         done = true
         for j = l+1:m
-            if length(TA[j].pos)==1 
+            if length(TA[j])==1 
                 done = false
                 i = TA[j].pos[1]
                 delete_col(A, TA, j)
@@ -102,7 +102,7 @@ function sp_preprocessing(A, l) #where l denotes the length of the original fact
                 TA.nnz-=1
                 if A[i].pos != []           
                     delete_col(TA,A,i)
-                    A.nnz-=length(A[i].pos)
+                    A.nnz-=length(A[i])
                     A[i].pos = Int64[]; A[i].values = nmod[]
                 end
             end
@@ -116,14 +116,42 @@ function sp_preprocessing(A, l) #where l denotes the length of the original fact
 end
 
 #TODO: implement further steps of structured Gauss and test efficiency
-function part_struct_gauss(A, TA)
-
+function part_struct_gauss(A, TA, l)
+    done = false
+    while !done
+        done = true
+        for j=l+1:A.c
+            if length(TA[j]) == 2
+                done = false
+                a = TA[j].pos[1] #index upper row
+                b = TA[j].pos[2] #index lower row
+                v = getindex(A[a],j)             #A[a,j]
+                w = getindex(A[b],j)    
+                p = length(A[a]) 
+                q = length(A[b])        #A[b,j]
+                if p  > q        #add A to B -> B = B-w/v * A
+                    A.rows[b] = add_scaled_row(A.rows[a],A.rows[b], -w*inv(v))
+                    A.nnz+=(length(A[b])-q)
+                    A[a].pos = Int64[]; A[a].values = nmod[]
+                    A.nnz -=p
+                else
+                    A.rows[a] = add_scaled_row(A.rows[b],A.rows[a], -v*inv(w))
+                    A.nnz+=(length(A[a]-p))
+                    A[b].pos = Int64[]; A[b].values = nmod[]
+                    A.nnz -=q
+                delete_col(j)
+                TA = transpose(A) #TODO: TA anpassen
+                end
+            end
+        end
+    end
+    return A
 end
     
 
 
 #Example matrix from Sieve
-include("FB_logs.jl")
+#include("FB_logs.jl")
 p = cryptoprime(10)
 TESTFIELD = BigFField(GF(p),primitive_elem(GF(p),true))
 SP = sieve_params(p,0.02,1.1)
@@ -133,6 +161,10 @@ modulus_ = fmpz((p-1)/2)
 RR = ResidueRing(ZZ,modulus_)
 A = change_base_ring(RR,RELMat)
 sp_preprocessing(A, l)
+
+A = sp_preprocessing(A, l)
+TA = transpose(A)
+part_struct_gauss(A, TA, l)
 
 #@time wiedemann(A, modulus_)
 @time 2*3
