@@ -6,7 +6,7 @@ Fachpraktikum = UInt32(0x00000001001) #v0x00.001.001
 ####################################################
 
 using Hecke,Nemo,Revise,Profile,Markdown
-include("Magma_sieve.jl"),include("wiedemann.jl")
+include("Magma_sieve.jl"),include("wiedemann.jl"),include("preprocessing.jl")
 revise()
 ENV["JULIA_DEBUG"] = "all" # enable debugging = "all" , disable:  = ""
 
