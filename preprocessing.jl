@@ -111,6 +111,8 @@ function sp_preprocessing(A, l) #where l denotes the length of the original fact
     A = delete_zero_rows(A)
     TA = transpose(A)
     A = transpose(delete_zero_rows(TA,l+1))
+    #TODO: A.cols anpassen
+    return A
 end
 
 #TODO: implement further steps of structured Gauss and test efficiency
