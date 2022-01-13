@@ -78,12 +78,18 @@ function sp_unique(A)
 end
 
 
+function sp_multiple_cols(A, TA, t=1)
+
+end
+
+
 function sp_preprocessing(A, l) #where l denotes the length of the original factor base
     sp_unique(A)
     TA = transpose(A)
     n,m = A.r, TA.r
 
     #PART 1: Eliminating one entry cols and corresponding rows + deleting rows with <2 entries and zero cols in the right part
+    #TODO: nnz. jeweils auch in TA und A ändern 
     done = false
     while !done
         done = true
@@ -102,15 +108,22 @@ function sp_preprocessing(A, l) #where l denotes the length of the original fact
             end
         end
     end
-    A = delete_zero_rows(A)
-    TA = transpose(A)
-    A = transpose(delete_zero_rows(TA,l+1))
-    return A, TA
+    #A = delete_zero_rows(A)
+    #TA = transpose(A)
+    #A = transpose(delete_zero_rows(TA,l+1))
+    #TODO: A.cols anpassen
+    return A
 end
+
 #TODO: implement further steps of structured Gauss and test efficiency
+function part_struct_gauss(A, TA)
+
+end
+    
 
 
 #Example matrix from Sieve
+include("FB_logs.jl")
 p = cryptoprime(10)
 TESTFIELD = FField(GF(p),primitive_elem(GF(p),true))
 SP = sieve_params(p,0.02,1.1)
@@ -119,11 +132,12 @@ p = length(TESTFIELD.K)
 modulus_ = fmpz((p-1)/2)
 RR = ResidueRing(ZZ,modulus_)
 A = change_base_ring(RR,RELMat)
+sp_preprocessing(A, l)
 
 #@time wiedemann(A, modulus_)
 @time 2*3
 @time wiedemann(A, modulus_)
-@time wiedemann(sp_preprocessing(A, l)[1], modulus_)
+@time wiedemann(sp_preprocessing(A, l), modulus_)
 
 
 
@@ -145,3 +159,8 @@ C = [3 0 2 0 0 0 0 1;0 5 0 0 1 -1 0 -2;4 0 0 0 0 0 0 -1;0 1 1 0 0 0 1 1;0 0 0 0 
 C = sparse_matrix(C)
 sp_preprocessing(C, 4)
 #Einträge in Zeile i löschen über A[i].pos = Int64[]; A[i].values = nmod[]
+
+
+#ideas:
+#column operations in left part to produce new one entry columns
+#eliminate columns in right part that are multiples of others
