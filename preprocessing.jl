@@ -105,14 +105,14 @@ function sp_preprocessing(A, l) #where l denotes the length of the original fact
     A = delete_zero_rows(A)
     TA = transpose(A)
     A = transpose(delete_zero_rows(TA,l+1))
-    return A, TA
+    return A
 end
 #TODO: implement further steps of structured Gauss and test efficiency
 
 
 #Example matrix from Sieve
 p = cryptoprime(10)
-TESTFIELD = FField(GF(p),primitive_elem(GF(p),true))
+TESTFIELD = BigFField(GF(p),primitive_elem(GF(p),true))
 SP = sieve_params(p,0.02,1.1)
 RELMat,FB,FBx,l = Sieve(TESTFIELD,SP)
 p = length(TESTFIELD.K)
