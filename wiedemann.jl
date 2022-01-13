@@ -7,8 +7,8 @@ Compute a (nontrivial) `kernelvector` $v$ s.t $Av = 0$ mod $N$.
 $N$ should be a prime.
 """
 function wiedemann(A,N,storage=false) # A in Z/NZ ^ n*m
-
 	RR = ResidueRing(ZZ,N)
+
 	#TODO reduce mod N = p-1
 	#for now assume N prime (=> Z/NZ field)
 	(n,m) = size(A);
@@ -22,6 +22,7 @@ function wiedemann(A,N,storage=false) # A in Z/NZ ^ n*m
 	r = rand(RR, m) # later generate random vector over ZZ / sampler ?
 	c = rand(RR, m)
 	randlin = transpose(rand(RR, m)) #or as (1,m) matrix ?
+
 	y = mul(TA,mul(A,r))
 	# solve A^tAx = y2 => x -y in kernel(A^tA) to avoid finding zero vec
 
@@ -44,11 +45,11 @@ function wiedemann(A,N,storage=false) # A in Z/NZ ^ n*m
 	else
 		seq = zeros(RR,2*n)
 		seq0 = @view seq[1]
-		seq0 .= randlin*c 					#preallocate here
+		seq0 .= randlin*c 					#TODO redo view
 		for i = 2:2*n
 			seqi = @view seq[i]
 			c = mul(TA,(mul(A,c))) # generate sequence
-			seqi .= randlin*c
+			seqi .= randlin*c  #eleminates
 		end
 		done,f = Hecke_berlekamp_massey(seq)
 	end 
@@ -142,3 +143,15 @@ end
 #TODO log degree f, size of m 
 # change horner & save sequence in Matrix.
 #TODO check savesequence implementation (not yet any running test)
+
+function mul_red!(a::fmpz_mod,b::fmpz_mod,c::fmpz_mod)
+	Ring = parent(a) 
+	a = b.data*c.data
+	return Ring(a)
+end 
+
+function dot_red!(u::Vector{fmpz_mod},v::Vector{fmpz_mod},w::Vector{fmpz_mod},reduce=false)
+
+
+
+
