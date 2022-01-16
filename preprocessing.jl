@@ -1,5 +1,6 @@
 using Hecke
 
+ENV["JULIA_DEBUG"] = "all"
 
 function delete_row(A, i) 
     non_zeros = length(A[i].pos)
@@ -78,12 +79,11 @@ function sp_unique(A)
 end
 
 
-function sp_multiple_cols(A, TA, t=1)
-
+function modify_col_add(A, B, c) #B = c*A + B
 end
 
 
-function sp_preprocessing(A, l) #where l denotes the length of the original factor base
+function sp_preprocessing_1(A, l) #where l denotes the length of the original factor base
     sp_unique(A)
     TA = transpose(A)
     n,m = A.r, TA.r
@@ -98,12 +98,12 @@ function sp_preprocessing(A, l) #where l denotes the length of the original fact
                 done = false
                 i = TA[j].pos[1]
                 delete_col(A, TA, j)
-                TA[j].pos = Int64[]; TA[j].values = nmod[]
+                empty!(TA[j].pos); empty!(TA[j].values)
                 TA.nnz-=1
                 if A[i].pos != []           
                     delete_col(TA,A,i)
                     A.nnz-=length(A[i])
-                    A[i].pos = Int64[]; A[i].values = nmod[]
+                    empty!(A[i].pos); empty!(A[i].values)
                 end
             end
         end
@@ -112,46 +112,70 @@ function sp_preprocessing(A, l) #where l denotes the length of the original fact
     TA = transpose(A)
     A = transpose(delete_zero_rows(TA,l+1))
     #TODO: A.cols anpassen
-    return A
+    return A, TA
 end
 
 #TODO: implement further steps of structured Gauss and test efficiency
-function part_struct_gauss(A, TA, l)
+function sp_preprocessing_2(A, TA, l)
     done = false
     while !done
         done = true
         for j=l+1:A.c
             if length(TA[j]) == 2
                 done = false
-                a = TA[j].pos[1] #index upper row
-                b = TA[j].pos[2] #index lower row
-                v = getindex(A[a],j)             #A[a,j]
-                w = getindex(A[b],j)    
-                p = length(A[a]) 
-                q = length(A[b])        #A[b,j]
+                a, b = TA[j].pos #indices of rows
+                v, w = TA[j].values #A[a,j], A[b,j]
+                p = length(A[a]); q = length(A[b]) #number of entries in rows
                 if p  > q        #add A to B -> B = B-w/v * A
-                    A.rows[b] = add_scaled_row(A.rows[a],A.rows[b], -w*inv(v))
+                    A.rows[b] = add_scaled_row(A.rows[a],A.rows[b], -divexact(w,v))
                     A.nnz+=(length(A[b])-q)
-                    A[a].pos = Int64[]; A[a].values = nmod[]
-                    A.nnz -=p
+                    delete_row(A,a)
                 else
-                    A.rows[a] = add_scaled_row(A.rows[b],A.rows[a], -v*inv(w))
-                    A.nnz+=(length(A[a]-p))
-                    A[b].pos = Int64[]; A[b].values = nmod[]
-                    A.nnz -=q
-                delete_col(j)
-                TA = transpose(A) #TODO: TA anpassen
+                    A.rows[a] = add_scaled_row(A.rows[b],A.rows[a], -divexact(v,w))
+                    A.nnz+=(length(A[a])-p)
+                    delete_row(A, b)
                 end
+                TA = transpose(A) #TODO: TA anpassen
             end
         end
     end
-    return A
+    A = delete_zero_rows(A)
+    TA = transpose(A)
+    A = transpose(delete_zero_rows(TA,l+1))
+    return A, TA
 end
-    
+
+#TODO: schauen, wie Funktionen sinnnvoll zusammengesetzt werden
+#Entweder nach Fällen zweimal durchlaufen oder direkt beide Fälle je Spalte testen
+
+function entries(A, TA, l)
+    one_entry = []
+    two_entries = []
+    three_entries = []
+    one_row = []
+    for j in l+1:TA.r
+        if length(TA[j]) == 1
+            push!(one_entry, j)
+        elseif length(TA[j]) == 2
+            push!(two_entries, j)
+        elseif length(TA[j]) == 3
+            push!(three_entries, j)
+        end
+    end 
+    for i in 1:A.r
+        if length(A[i]) == 1
+            push!(one_row, i)
+        end
+    end
+    return one_entry, two_entries, three_entries, one_row
+end
+
+
+
 
 
 #Example matrix from Sieve
-#include("FB_logs.jl")
+include("FB_logs.jl")
 p = cryptoprime(10)
 TESTFIELD = BigFField(GF(p),primitive_elem(GF(p),true))
 SP = sieve_params(p,0.02,1.1)
@@ -160,16 +184,18 @@ p = length(TESTFIELD.K)
 modulus_ = fmpz((p-1)/2)
 RR = ResidueRing(ZZ,modulus_)
 A = change_base_ring(RR,RELMat)
-sp_preprocessing(A, l)
-
-A = sp_preprocessing(A, l)
 TA = transpose(A)
-part_struct_gauss(A, TA, l)
+entries(A, TA, l)
+
+A, TA = sp_preprocessing_1(A, l)
+entries(A, TA, l)
+A, TA = sp_preprocessing_2(A, TA, l)
+entries(A, TA, l)
 
 #@time wiedemann(A, modulus_)
 @time 2*3
 @time wiedemann(A, modulus_)
-@time wiedemann(sp_preprocessing(A, l), modulus_)
+@time wiedemann(sp_preprocessing_1(A, l), modulus_)
 
 
 
