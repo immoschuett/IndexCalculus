@@ -123,7 +123,7 @@ end
 
 
 #Example matrix from Sieve
-include("FB_logs.jl")
+#= include("FB_logs.jl")
 p = cryptoprime(10)
 TESTFIELD = BigFField(GF(p),primitive_elem(GF(p),true))
 SP = sieve_params(p,0.02,1.1)
@@ -164,3 +164,4 @@ sp_preprocessing(C, 4)
 #ideas:
 #column operations in left part to produce new one entry columns
 #eliminate columns in right part that are multiples of others
+=#
