@@ -119,7 +119,7 @@ function Sieve(F::BigFField,sieveparams::Sparam)
     FB = vcat([lift(F.a)],deleteat!(fb_primes,indx)) # tauschen a[1] = a[2] , a[2] = [1] 
     # use shift! / unshift! here...
     log2 = log(2.0);
-    logqs = [log(q)/log2 for q in FB] #real logarithms for sieve 
+    logqs = [log(Int(q))/log2 for q in FB] #real logarithms for sieve 
     FBs = deepcopy(FactorBase(FB))
     l2 = length(FB)
     l = deepcopy(l2)
@@ -165,7 +165,7 @@ function Sieve(F::BigFField,sieveparams::Sparam)
         idx = 0
         for c2 in 1:length(sieve)
             n = rel % p
-            if abs(sieve[c2] - floor(log(n)/log2)) < 1 #TODO
+            if abs(sieve[c2] - floor(log(Int(n))/log2)) < 1 #TODO
                 # TODO insert default factorbase algorithm
                 #FBs = FactorBase(FB) #generate Factorbas from updated FBs with new c_i´s
                 if issmooth(FBs,fmpz(n))
@@ -219,8 +219,8 @@ end
 
 function Sieve(F::FField,sieveparams::Sparam)
     @debug @info "SIEVE: starting Sieve"
-    p  =Int64(length(F.K))
-    H = Int64(floor(sqrt(p))+1)
+    p = length(F.K) #(p = Int(length(A.K)))
+    H = floor(sqrt(p,2))+1
     J = H^2 - p
 
     # factorbase up to qlimit
@@ -228,12 +228,11 @@ function Sieve(F::FField,sieveparams::Sparam)
 
 
     #FB[findfirst(isequal(lift(alpha))] FB[1] = lift(alpha), FB[]
-    indx = findfirst(isequal(Int64(lift(F.a))),fb_primes)
-    FB = vcat([Int64(lift(F.a))],deleteat!(fb_primes,indx)) # tauschen a[1] = a[2] , a[2] = [1] 
+    indx = findfirst(isequal(lift(F.a)),fb_primes)
+    FB = vcat([lift(F.a)],deleteat!(fb_primes,indx)) # tauschen a[1] = a[2] , a[2] = [1] 
     # use shift! / unshift! here...
     log2 = log(2.0);
-    println(FB)
-    logqs = [log(q)/log2 for q in FB] #real logarithms for sieve 
+    logqs = [log(Int(q))/log2 for q in FB] #real logarithms for sieve 
     FBs = deepcopy(FactorBase(FB))
     l2 = length(FB)
     l = deepcopy(l2)
@@ -252,7 +251,7 @@ function Sieve(F::FField,sieveparams::Sparam)
             logq = logqs[i]
             while qpow < sieveparams.qlimit      # qlimit-smooth
                 den % qpow != 0 || break
-                c2 = num * invmod(den, qpow)  % qpow
+                c2 = num * invmod(den, fmpz(qpow))  % qpow
                 (c2 != 0) || (c2 = qpow)
                 nextqpow = qpow*q    #increase q_power
                 while c2 < c1   #c2>=c1 to remove redundant relations of (c1,c2) tuples, just increase c2
@@ -279,11 +278,11 @@ function Sieve(F::FField,sieveparams::Sparam)
         idx = 0
         for c2 in 1:length(sieve)
             n = rel % p
-            if abs(sieve[c2] - floor(log(n)/log2)) < 1 #TODO
+            if abs(sieve[c2] - floor(log(Int(n))/log2)) < 1 #TODO
                 # TODO insert default factorbase algorithm
                 #FBs = FactorBase(FB) #generate Factorbas from updated FBs with new c_i´s
-                if issmooth(FBs,n)
-                    dict_factors = Hecke.factor(FBs,n)
+                if issmooth(FBs,fmpz(n))
+                    dict_factors = Hecke.factor(FBs,fmpz(n))
                     #Include each H + c_i in extended factor basis.
                     r = length(Indx)+1
                     if !((H + c1) in keys(Indx))
@@ -297,8 +296,8 @@ function Sieve(F::FField,sieveparams::Sparam)
                     end#(FB = vcat(FB,[H + c2]))
                     #Include relation (H + c1)*(H + c2) = fact.
                     #row = nrows(A) + 1 # insert new relation (new row)to sparse_matrix
-                    J1 = Vector{Int64}([])
-                    V = Vector{Int64}([])
+                    J1 = Vector{Int}([])
+                    V = Vector{fmpz}([])
                     for (prime,power) in dict_factors
                         if !(power == 0)
                             push!(J1,Indx[prime])
@@ -307,12 +306,12 @@ function Sieve(F::FField,sieveparams::Sparam)
                     end
                     if c1 == c2
                          push!(J1,Indx[H+c1])
-                         push!(V,-2)
+                         push!(V,fmpz(-2))
                     else
                          push!(J1,Indx[H+c1])
                          push!(J1,Indx[H+c2])
-                         push!(V,-1)
-                         push!(V,-1)
+                         push!(V,fmpz(-1))
+                         push!(V,fmpz(-1))
                     end
                     push!(A,sparse_row(ZZ, J1, V))
                 end

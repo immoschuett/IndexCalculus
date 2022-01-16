@@ -6,7 +6,7 @@ revise()
 Compute a (nontrivial) `kernelvector` $v$ s.t $Av = 0$ mod $N$.
 $N$ should be a prime.
 """
-function wiedemann(A,N,storage=false) # A in Z/NZ ^ n*m
+function wiedemann(A,N,storage=false,smallseq=0::Int64) # A in Z/NZ ^ n*m
 	RR = ResidueRing(ZZ,N)
 
 	#TODO reduce mod N = p-1
@@ -42,7 +42,11 @@ function wiedemann(A,N,storage=false) # A in Z/NZ ^ n*m
 		!iszero(@view M[a,:]) || @goto stepback
 		G = deepcopy(M[a,:])
 		done,f = Hecke_berlekamp_massey(G)
-	else
+	elseif smallseq > 0
+
+
+
+	else 
 		seq = zeros(RR,2*n)
 		seq0 = @view seq[1]
 		seq0 .= randlin*c 					#TODO redo view
@@ -150,8 +154,82 @@ function mul_red!(a::fmpz_mod,b::fmpz_mod,c::fmpz_mod)
 	return Ring(a)
 end 
 
-function dot_red!(u::Vector{fmpz_mod},v::Vector{fmpz_mod},w::Vector{fmpz_mod},reduce=false)
+
+function mul_mod!(c::Vector{S}, A::SMat{T}, b::Vector{S}, mod::S) where {S, T}
+  @assert length(b) == ncols(A)
+  @assert length(c) == nrows(A)
+
+  for i = 1:length(A.rows)
+    s = S(0)
+    I = A.rows[i]
+    for j=1:length(I.pos)
+      s += S(I.values[j]) * b[I.pos[j]]
+    end
+    c[i] = s % mod
+  end
+  return c
+end
+
+####
+#Experimental unsafe functions 
+function multry3!(c::Vector{T}, A::SMat{T}, b::AbstractVector{T},z,s) where T
+    z = zero!(z)
+    for i in eachindex(1:nrows(A))
+        c[i]= mdot!(A[i], b, z,s) #attenton this mutes A too here...
+    end
+    return c
+end
+
+function mdot!(A::SRow{T}, b::AbstractVector{T}, zero::T,s::T) where {T}
+	zero!(zero)
+    for j in eachindex(1:length(A.pos))
+        zero += mul!(s,A.values[j],b[A.pos[j]])
+         #add!(zero,zero,mul!(zero!(s),A.values[j],b[A.pos[j]]))
+    end
+    return zero
+end
 
 
+#using 
+function fastmul!(c,A,b,z,garb)
+    #nrows(A) == length(c) || error("dim mismatch c = A*...")
+    #ncols(A) == length(b) || error("dim mismatch A*b ")
+    fill!(c,z)
+    @inbounds for i in eachindex(1:nrows(A))
+        for j in eachindex(1:length(A[i].pos))
+            #c[i] += A[i].values[j]*b[A[i].pos[j]]
+            c[i] += mul!(garb,A[i].values[j],b[A[i].pos[j]])
+        end 
+    end 
+    return c
+end 
+#=
+function mul_alt!(C::StridedMatrix, X::StridedMatrix, A::SparseMatrixCSC)
+    mX, nX = size(X)
+    #nX == A.m || throw(DimensionMismatch())
+    fill!(C, zero(eltype(C)))
+    rowval = A.rowval
+    nzval = A.nzval
+    @inbounds for  col = 1:A.n, k=A.colptr[col]:(A.colptr[col+1]-1)
+        ki=rowval[k]
+        kv=nzval[k]
+        for multivec_row=1:mX
+            C[multivec_row, col] += X[multivec_row, ki] * kv
+        end
+    end
+    C
+end
 
-
+function fastmul2!(c,A,b,z,garb)
+    nrows(A) == length(c) || error("dim")
+    ncols(A) == length(b) || error("dim")
+    fill!(c,z)
+    for i in eachindex(1:nrows(A))
+        for j in eachindex(1:length(A[i].pos))
+            #c[i] += A[i].values[j]*b[A[i].pos[j]]
+            c[i] += mul!(garb,A[i].values[j],b[A[i].pos[j]])
+        end 
+    end 
+    return c
+end 
+=#
