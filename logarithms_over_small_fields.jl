@@ -44,7 +44,3 @@ function test()
     end 
     return true 
 end 
-
-test()
-
-ENV["JULIA_DEBUG"] = "" # enable debugging

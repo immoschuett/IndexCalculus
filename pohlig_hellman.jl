@@ -40,7 +40,8 @@ function pohlig_hellman(g,h,F)
         if false #catched divisor of p-1 TODO 
             #update L 
             @goto retour 
-        end 
+        else 
+        end
         push!(Sol,x_i)
     end 
     #use the CRT
