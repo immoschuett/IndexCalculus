@@ -1,15 +1,15 @@
-####################################################
+##########################################################################################################################################
 #
 Fachpraktikum = UInt32(0x00000002001) #v0x00.001.001
 @info "Version-Fachpraktikum", Fachpraktikum
 #
-####################################################
+##########################################################################################################################################
 using Hecke,Nemo,Revise,Profile,Markdown,TimerOutputs,Random
 const to = TimerOutput()#show(to)
 include("Magma_sieve.jl"),include("wiedemann_var.jl"),include("preprocessing.jl")
 revise()
 ENV["JULIA_DEBUG"] = "all" # enable debugging = "all" , disable:  = ""
-####################################################
+##########################################################################################################################################
 @doc Markdown.doc"""
     FB_logs(F::FField,storage=false) -> Tuple{Dict{fmpz, fmpz}, Vector{fmpz_mod}, FactorBase{fmpz}}
 Compute a  `Factorbase` and a Dict of its `discrete logarithms` using a Indexcalculus algorithm.
@@ -87,7 +87,7 @@ function FB_logs_new(F,prepro=false,SP=sieve_params(p,0.02,1.1)::Sparam) #TODO t
     return Logdict,kern,FactorBase(Q)
     end
 end
-####################################################
+##########################################################################################################################################
 # Aux functions
 function check_logdict(F,D,Q)
     for q in Q 
@@ -127,9 +127,8 @@ function check_logdict_after(F,D)
     end 
     return true 
 end
-
-
-
+##########################################################################################################################################
+# Testfields
 ENV["JULIA_DEBUG"] = "all" 
 p = magma_p = fmpz(100000000000000000763)
 p = cryptoprime(7)
@@ -137,13 +136,15 @@ TESTFIELD = BigFField(GF(p),primitive_elem(GF(p),true))
 
 SP = Sparam(2600, 1200, 1.1,(100,200))
 
-@time A,FB,FBx,l = Sieve(TESTFIELD,SP)
+@time A,FB,FBx,l = Sieve(TESTFIELD,sieve_params(p,0.02,1.1))
 sp_preprocessing_1(A,l)
 
+N = div(p-1,2)
+RR = ResidueRing(ZZ,N)
 
 
 reset_timer!(to)
-FB_logs_new(TESTFIELD,true,SP)
+FB_logs_new(TESTFIELD,true)
 
 #=
 check_logdict_after(TESTFIELD,Q[1])
@@ -171,3 +172,5 @@ typeof(a.data)
 =#
 
 #fmpz fast SMAt mul! 
+
+##########################################################################################################################################

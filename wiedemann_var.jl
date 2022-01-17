@@ -24,10 +24,10 @@ function wiedemann_var(A::SMat{fmpz},N) #N::fmpz || N::Int64
 
     #Wiedemann sequence
     # solve A^tAx = y2 => x -y in kernel(A^tA) to avoid finding zero vec
-	y = mul!(storing_m,TA,mul!(storing_n,A,r))
+	y = Hecke.mul!(storing_m,TA, Hecke.mul!(storing_n,A,r))
 	seq[1] = dot(randlin,c,zero!(z)) #randlin*c 		
 	for i = 2:2*n  #Wiedemann sequence
-        c = mul!(c,TA,mul!(storing_n,A,c))
+        c =  Hecke.mul!(c,TA, Hecke.mul!(storing_n,A,c))
 		#c = multact!(c,TA,(mulact!(storing,A,c,zero!(RR),st)),zero(RR),st) # generate sequence
 		seq[i] = dot(randlin,c)  #eleminates
 	end
@@ -67,10 +67,10 @@ function horner_evaluate_var(f,TA,A,c)
     s =  Vector{T}(undef,m)
 	C = collect(coefficients(f))
 	n = length(C)
-	s = mul!(s,TA,mul!(storing_n,A,c)).*C[end]+c.*C[end-1]
+	s =  Hecke.mul!(s,TA, Hecke.mul!(storing_n,A,c)).*C[end]+c.*C[end-1]
 	for i = n-2:-1:1
 		#s = A^t * A * s + fi * c  inloop
-		s = mul!(s,TA,mul!(storing_n,A,s)) + c.*C[i]
+		s =  Hecke.mul!(s,TA, Hecke.mul!(storing_n,A,s)) + c.*C[i]
 	end
 	@debug iszero(f(transpose(Matrix(A))*Matrix(A))*c - s) ? (@info "HORNER: f(A^t*A)c = s",true) : (@error  "HORNER: f(A^t*A)c = s",false)
 	return s
