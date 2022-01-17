@@ -75,3 +75,46 @@ function horner_evaluate_var(f,TA,A,c)
 	@debug iszero(f(transpose(Matrix(A))*Matrix(A))*c - s) ? (@info "HORNER: f(A^t*A)c = s",true) : (@error  "HORNER: f(A^t*A)c = s",false)
 	return s
 end
+function rand_srow(l,n,b,R)
+    #generate fmpz sparse_row, indx not greater than n limited by n
+    #l values not greater than b
+    val =  rand(1:b,l)
+    pos = randperm!(Vector{Int}(undef, n))[1:l]
+    return sparse_row(R,pos,val)
+end
+function Hecke_berlekamp_massey(L)#::Vector{fmpz})
+	# from Hecke\U6dsX\src\Sparse\Matrix.jl
+	 RR = parent(L[1])
+	 M = modulus(RR)
+	 Ry,x = PolynomialRing(RR, "x", cached = false) ## Ring over TZZ
+     R_s = ZZ
+     lg = length(L)
+     L = [R_s(L[lg-i]) for i in 0:lg-1]
+     #Y = gen(Ry)
+     g = Ry(L)
+     if iszero(g)
+       return true, g
+     end
+     f = x^lg
+	 #rems = gcd(lift(leading_coefficient(g)),M)
+	 #if rems != 1
+	 #	 return (false,rems)
+	 #end
+     N = R_s(inv(leading_coefficient(g))); g1 = g*N
+     v0 = Ry(); v1 = Ry(1)
+     while lg <= 2*degree(g1)
+       q,r = divrem(f,g1)
+       if r==0
+         N = R_s(1)
+       else
+		 #rems = gcd(lift(leading_coefficient(r)),M)
+  		 #if rems != 1
+  		 #	 return (false,rems)
+  		 #end
+         N = R_s(inv(leading_coefficient(r)))
+       end
+       v = (v0-q*v1)*N
+       v0 = v1; v1 = v; f = g1; g1= r*N
+     end
+     return true, divexact(v1, leading_coefficient(v1))
+end

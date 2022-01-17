@@ -4,9 +4,9 @@ Fachpraktikum = UInt32(0x00000002001) #v0x00.001.001
 @info "Version-Fachpraktikum", Fachpraktikum
 #
 ####################################################
-using Hecke,Nemo,Revise,Profile,Markdown,TimerOutputs
+using Hecke,Nemo,Revise,Profile,Markdown,TimerOutputs,Random
 const to = TimerOutput()#show(to)
-include("Magma_sieve.jl"),include("wiedemann.jl"),include("preprocessing.jl")
+include("Magma_sieve.jl"),include("wiedemann_var.jl"),include("preprocessing.jl")
 revise()
 ENV["JULIA_DEBUG"] = "all" # enable debugging = "all" , disable:  = ""
 ####################################################
@@ -19,7 +19,7 @@ function FB_logs_new(F,prepro=false,SP=sieve_params(p,0.02,1.1)::Sparam) #TODO t
     @timeit to "FB_logs_total" begin
     #for F FField find FB,FB_logs,FB_array
     p = characteristic(F.K)
-    if p > 0 #TODO get border
+    if p > typemax(Int)
         T = fmpz
     else
         T = Int64
@@ -39,8 +39,8 @@ function FB_logs_new(F,prepro=false,SP=sieve_params(p,0.02,1.1)::Sparam) #TODO t
         if prepro 
             n,m = size(RELMat)
             @debug @info "FB_LOGS: size of RELMAT before PrePro§; size(A) = $n x $m"
-            RELMat = sp_preprocessing(RELMat,l)
-            n,m = size(RELMat)
+            RELMat,_ = sp_preprocessing_1(RELMat,l)
+            (n,m) = size(RELMat)
             @debug @info "FB_LOGS: size of RELMAT after PrePro§; size(A) = $n x $m"
         end
     end
@@ -87,6 +87,8 @@ function FB_logs_new(F,prepro=false,SP=sieve_params(p,0.02,1.1)::Sparam) #TODO t
     return Logdict,kern,FactorBase(Q)
     end
 end
+####################################################
+# Aux functions
 function check_logdict(F,D,Q)
     for q in Q 
         F.a^D[q] == q || return false 
@@ -126,23 +128,23 @@ function check_logdict_after(F,D)
     return true 
 end
 
-testprime =  12246448572930226247
+
+
+ENV["JULIA_DEBUG"] = "all" 
+p = magma_p = fmpz(100000000000000000763)
 p = cryptoprime(7)
-p = testprime
 TESTFIELD = BigFField(GF(p),primitive_elem(GF(p),true))
-SP = sieve_params(p,0.02,1.1)
+
+SP = Sparam(2600, 1200, 1.1,(100,200))
+
 @time A,FB,FBx,l = Sieve(TESTFIELD,SP)
+sp_preprocessing_1(A,l)
 
-FB_logs_new(TESTFIELD)
 
-N = Int(divexact(Int64(8825458),2))
-@time  wiedemann_var(A,N)
-@time k =  wiedemann_nmod(A,N)
-@time wiedemann(A,N)
-@time a,b,c = FB_logs_nmod(TESTFIELD,false,false)
-check_logdict_after(TESTFIELD,a)
-Profile.clear() 
-ENV["JULIA_DEBUG"] = ""
+
+reset_timer!(to)
+FB_logs_new(TESTFIELD,true,SP)
+
 #=
 check_logdict_after(TESTFIELD,Q[1])
 
