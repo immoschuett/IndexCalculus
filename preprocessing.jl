@@ -1,7 +1,7 @@
 using Hecke, Profile
 include("prepro_aux_functions.jl")
 
-ENV["JULIA_DEBUG"] = "all"
+ENV["JULIA_DEBUG"] = ""
 
 function sp_preprocessing_1(A, l) #where l denotes the length of the original factor base
     sp_unique(A)
@@ -34,7 +34,7 @@ function sp_preprocessing_1(A, l) #where l denotes the length of the original fa
     return A, TA
 end
 
-@profile sp_preprocessing_1(A, l)
+#@profile sp_preprocessing_1(A, l)
 
 #TODO: implement further steps of structured Gauss and test efficiency
 function sp_preprocessing_2(A, TA, l)
@@ -68,14 +68,14 @@ function sp_preprocessing_2(A, TA, l)
     A = delete_zero_rows(A)
     TA = transpose(A)
     A = transpose(delete_zero_rows(TA,l+1))
-    return A, TA, d
+    return A, TA
 end
 
 
 function sp_preprocessing_3(A, TA, l) #without comparison
     n,m = A.r, TA.r
     done = false
-    for counter = 1:3
+    for counter = 1:10
     #while !done
         for j=1:m
             if length(TA[j])==3
@@ -94,9 +94,8 @@ function sp_preprocessing_3(A, TA, l) #without comparison
     A = delete_zero_rows(A)
     TA = transpose(A)
     A = transpose(delete_zero_rows(TA,l+1))      
+    return A, TA
 end
-
-sp_preprocessing_3(A, TA, l)
 
 
  function sp_preprocessing_cases(A, l)
@@ -151,6 +150,7 @@ end
 using Markdown, Nemo
 include("Magma_sieve.jl")
 include("wiedemann.jl")
+#include("FB_logs.jl")
 p = cryptoprime(10)
 TESTFIELD = BigFField(GF(p),primitive_elem(GF(p),true))
 SP = sieve_params(p,0.02,1.1)
@@ -164,7 +164,7 @@ A = change_base_ring(RR,RELMat)
 A, TA = sp_preprocessing_1(A, l)
 #B, TB = A, TA
 A, TA = sp_preprocessing_2(A, TA, l)
-A,TA = sp_preprocessing_3(A, TA, l)
+A, TA = sp_preprocessing_3(A, TA, l)
 A, TA = sp_preprocessing_cases(A, l)
 
 entries(A, TA, l)
