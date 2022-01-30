@@ -117,7 +117,7 @@ end
 
 function delete_col(A, TA, j) #only deletes entries in column j, output same size as input
     for row in TA[j].pos 
-        i = searchsortedfirst(A[row].pos, j)
+        i = findfirst(isequal(j), A[row].pos)
         deleteat!(A[row].pos, i) ; deleteat!(A[row].values, i)
     end
     A.nnz -=length(TA[j].pos)
@@ -156,6 +156,8 @@ function entries(A, TA, l)
     one_entry = []
     two_entries = []
     three_entries = []
+    four_entries = []
+    five_entries = []
     one_row = []
     for j in l+1:TA.r
         if length(TA[j]) == 1
@@ -164,6 +166,10 @@ function entries(A, TA, l)
             push!(two_entries, j)
         elseif length(TA[j]) == 3
             push!(three_entries, j)
+        elseif length(TA[j]) == 4
+            push!(four_entries, j)
+        elseif length(TA[j]) == 5
+            push!(five_entries, j)
         end
     end 
     for i in 1:A.r
@@ -171,10 +177,18 @@ function entries(A, TA, l)
             push!(one_row, i)
         end
     end
-    return one_entry, two_entries, three_entries, one_row
+    return one_entry, two_entries, three_entries, four_entries, five_entries, one_row
 end 
 
 
+function cryptoprime(N)
+    #return a Prime p with N digits. s.t (p-1)/2 is prime
+    p = rand(fmpz(10)^(N-1):fmpz(10)^N)
+    while true
+        p = next_prime(p+1)
+        !isprime(div(p-1,2)) || return p
+    end 
+end 
 
 # mini examples
 RR = ResidueRing(ZZ,10)
