@@ -3,7 +3,7 @@ include("prepro_aux_functions.jl")
 
 ENV["JULIA_DEBUG"] = ""
 
-function sp_preprocessing_1(A, TA , l) #where l denotes the length of the original factor base
+function sp_preprocessing_1(A, TA, l) #where l denotes the length of the original factor base
     sp_unique(A)
     #TA = transpose(A)
     n,m = A.r, TA.r
@@ -39,6 +39,7 @@ function sp_preprocessing_2(A, TA, l)
     while !done 
         done = true
         for j=l+1:m
+            iszero(transpose(A)-TA)
             if length(TA[j]) == 2
                 done = false
                 a, b = TA[j].pos #indices of rows
@@ -163,6 +164,8 @@ end
     while !done 
         done = true
         for j = l+1:m
+            print(j,",", length(TA[j]))
+            @assert iszero(transpose(A)-TA)
             if length(TA[j])==1 
                 done = false
                 i = TA[j].pos[1]           
@@ -204,12 +207,12 @@ function sp_preprocessing_0(A, TA, l)
             v = A[i].values[e]
             if v == (modulus_ - 2)
                 idx_col = A[i].pos[e] #index of col
-                for idx_row in TA[idx_col]
+                for idx_row in TA[idx_col].pos
                     print(idx_row)
                     if idx_row!=i
                         f = findfirst(isequal(idx_col), A[idx_row].pos) #position of this entry in row A[idx_row]
                         w = A[idx_row].values[f]
-                        add_scaled_col_trans(TA, A, i, idx_row, -divexact(w, v))
+                        add_scaled_col_trans!(TA, A, i, idx_row, -divexact(w, v))
                         add_scaled_row!(A, i, idx_row, -divexact(w, v))
                     end
                 end
@@ -219,6 +222,38 @@ function sp_preprocessing_0(A, TA, l)
     TA = transpose(A)
     return A, TA         
 end 
+
+
+function sp_preprocessing(A, TA, l, i=1, zero=false)
+    @assert 1<=i<=5
+    if zero
+        A, TA = sp_preprocessing_0(A, TA, l)
+    end
+    A, TA = sp_preprocessing_1(A, TA, l)
+    if i == 1
+        return A, TA
+    else
+        A, TA = sp_preprocessing_2(A, TA, l)
+        if i == 2
+            return A, TA
+        else
+            A, TA = sp_preprocessing_3(A, TA, l)
+            if i == 3
+                return A, TA
+            else
+                A, TA = sp_preprocessing_4(A, TA, l)
+                if i == 4
+                    return A, TA
+                else
+                    A, TA = sp_preprocessing_5(A, TA, l)
+                    return A, TA
+                end
+            end
+        end
+    end
+    return A, TA
+end
+
 
 
 
@@ -235,7 +270,7 @@ using Markdown, Nemo
 include("Magma_sieve.jl")
 include("wiedemann.jl")
 #include("FB_logs.jl")
-p = cryptoprime(5)
+p = cryptoprime(10)
 TESTFIELD = BigFField(GF(p),primitive_elem(GF(p),true))
 SP = sieve_params(p,0.02,1.1)
 RELMat,FB,FBx,l = Sieve(TESTFIELD,SP)
@@ -244,7 +279,7 @@ modulus_ = fmpz((p-1)/2)
 RR = ResidueRing(ZZ,modulus_)
 A = change_base_ring(RR,RELMat)
 density(A)
-A, TA = sp_preprocessing_1(A, l)
+A, TA = sp_preprocessing_1(A, TA, l)
 density(A)
 A, TA = sp_preprocessing_2(A, TA, l)
 density(A)
