@@ -219,7 +219,7 @@ function sp_preprocessing_0(A, TA, l)
     TA = transpose(A)
     return A, TA         
 end 
-
+#=
 A = change_base_ring(ResidueRing(ZZ,17),A)
 sp_preprocessing_cases(A, l)
 
@@ -228,11 +228,6 @@ ok
 #TODO: schauen, wie Funktionen sinnnvoll zusammengesetzt werden
 #Entweder nach Fällen zweimal durchlaufen oder direkt beide Fälle je Spalte testen
 
-
-
-
-
-#=
 #Example matrix from Sieve
 using Markdown, Nemo
 include("Magma_sieve.jl")
