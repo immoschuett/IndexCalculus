@@ -3,7 +3,7 @@ include("prepro_aux_functions.jl")
 
 ENV["JULIA_DEBUG"] = ""
 
-function sp_preprocessing_1(A, TA=transpose(A), l) #where l denotes the length of the original factor base
+function sp_preprocessing_1(A,TA, l) #where l denotes the length of the original factor base
     sp_unique(A)
     #TA = transpose(A)
     n,m = A.r, TA.r
@@ -220,8 +220,11 @@ function sp_preprocessing_0(A, TA, l)
     return A, TA         
 end 
 
+A = change_base_ring(ResidueRing(ZZ,17),A)
+sp_preprocessing_cases(A, l)
 
 
+ok
 #TODO: schauen, wie Funktionen sinnnvoll zusammengesetzt werden
 #Entweder nach Fällen zweimal durchlaufen oder direkt beide Fälle je Spalte testen
 
@@ -229,7 +232,7 @@ end
 
 
 
-
+#=
 #Example matrix from Sieve
 using Markdown, Nemo
 include("Magma_sieve.jl")
@@ -244,7 +247,7 @@ modulus_ = fmpz((p-1)/2)
 RR = ResidueRing(ZZ,modulus_)
 A = change_base_ring(RR,RELMat)
 density(A)
-A, TA = sp_preprocessing_1(A, l)
+A, TA = sp_preprocessing_1(A,TA, l)
 density(A)
 A, TA = sp_preprocessing_2(A, TA, l)
 density(A)
@@ -293,3 +296,4 @@ sp_preprocessing(C, 4)
 #ideas:
 #column operations in left part to produce new one entry columns
 #eliminate columns in right part that are multiples of others
+=#
