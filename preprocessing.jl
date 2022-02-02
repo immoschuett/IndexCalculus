@@ -218,7 +218,7 @@ function sp_preprocessing_0(A, TA, l)
     TA = transpose(A)
     return A, TA         
 end 
-
+#=
 A = change_base_ring(ResidueRing(ZZ,17),A)
 sp_preprocessing_cases(A, l)
 sp_preprocessing_0(A,transpose(A),l)
