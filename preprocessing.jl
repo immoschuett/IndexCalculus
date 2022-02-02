@@ -1,9 +1,9 @@
-using Hecke, Profile
+using Hecke, Profile 
 include("prepro_aux_functions.jl")
 
 ENV["JULIA_DEBUG"] = ""
 
-function sp_preprocessing_1(A,TA, l) #where l denotes the length of the original factor base
+function sp_preprocessing_1(A,TA,l) #where l denotes the length of the original factor base
     sp_unique(A)
     #TA = transpose(A)
     n,m = A.r, TA.r
