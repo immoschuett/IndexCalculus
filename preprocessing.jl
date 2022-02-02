@@ -204,12 +204,11 @@ function sp_preprocessing_0(A, TA, l)
             v = A[i].values[e]
             if v == (modulus_ - 2)
                 idx_col = A[i].pos[e] #index of col
-                for idx_row in TA[idx_col]
-                    print(idx_row)
+                for idx_row in TA[idx_col].pos
                     if idx_row!=i
                         f = findfirst(isequal(idx_col), A[idx_row].pos) #position of this entry in row A[idx_row]
                         w = A[idx_row].values[f]
-                        add_scaled_col_trans(TA, A, i, idx_row, -divexact(w, v))
+                        add_scaled_col_trans!(TA, A, i, idx_row, -divexact(w, v))
                         add_scaled_row!(A, i, idx_row, -divexact(w, v))
                     end
                 end
@@ -219,11 +218,11 @@ function sp_preprocessing_0(A, TA, l)
     TA = transpose(A)
     return A, TA         
 end 
-#=
+
 A = change_base_ring(ResidueRing(ZZ,17),A)
 sp_preprocessing_cases(A, l)
-
-
+sp_preprocessing_0(A,transpose(A),l)
+findfirst(isequal(3),B[2].pos)
 ok
 #TODO: schauen, wie Funktionen sinnnvoll zusammengesetzt werden
 #Entweder nach Fällen zweimal durchlaufen oder direkt beide Fälle je Spalte testen

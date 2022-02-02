@@ -6,7 +6,7 @@ Fachpraktikum = UInt32(0x00000002001) #v0x00.001.001
 ##########################################################################################################################################
 using Hecke,Nemo,Revise,Profile,Markdown,TimerOutputs,Random
 const to = TimerOutput()#show(to)
-include("Magma_sieve.jl"),include("wiedemann_var.jl")#,include("preprocessing.jl")
+include("Magma_sieve.jl"),include("wiedemann_var.jl"),include("preprocessing.jl")
 revise()
 ENV["JULIA_DEBUG"] = "all" # enable debugging = "all" , disable:  = ""
 ##########################################################################################################################################
@@ -115,7 +115,7 @@ end
     Indiv_Log(F,FB,FB_logs,h) -> Tuple{Dict{fmpz, fmpz}, Vector{fmpz_mod}, FactorBase{fmpz}}
 Compute the discrete logarithm $log_F.a(h)$ i.e. compute an `x` s.t. `F.a^x = h` given a Factorbase FB with corresponding logarithms in FB_logs using a #TODO sieve.
 """
-function Indiv_Log(F,FB,FB_logs,h)
+function Indiv_Log(F,FB,FB_logs,h) #TODO work on here.
     #return log_a(h) i.e x s.t a^x = h
     p = length(F.K)
     g = F.a
@@ -139,7 +139,7 @@ end
 # Testfields
 ENV["JULIA_DEBUG"] = "all" 
 p = magma_p = fmpz(100000000000000000763)
-p = cryptoprime(6)
+p = cryptoprime(5)
  p = fmpz(p)
 TESTFIELD = BigFField(GF(p),primitive_elem(GF(p),true))
 
@@ -152,7 +152,9 @@ N = div(p-1,2)
 RR = ResidueRing(ZZ,N)
 A = change_base_ring(RR,A)
 reset_timer!(to)
-@time D = FB_logs_new(TESTFIELD,false,false)
+@time FB_logs, FB = FB_logs_new(TESTFIELD,true,true)
+show(to)
+Indiv_Log(TESTFIELD,FB,FB_logs,123)
 check_logdict_after(TESTFIELD,D[1])
 #=
 check_logdict_after(TESTFIELD,Q[1])
