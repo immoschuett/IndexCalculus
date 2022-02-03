@@ -14,7 +14,7 @@ ENV["JULIA_DEBUG"] = "all" # enable debugging = "all" , disable:  = ""
     FB_logs(F::FField,storage=false) -> Tuple{Dict{fmpz, fmpz}, Vector{fmpz_mod}, FactorBase{fmpz}}
 Compute a  `Factorbase` and a Dict of its `discrete logarithms` using a Indexcalculus algorithm.
 """
-function FB_logs_new(F,prepro=false,SP=sieve_params(p,0.02,1.1)::Sparam) #TODO this function for an FField
+function FB_logs_new(F,prepro=false,prepro2=false,SP=sieve_params(p,0.02,1.1)::Sparam) #TODO this function for an FField
     ##########################################################################################################################################
     @timeit to "FB_logs_total" begin
     #for F FField find FB,FB_logs,FB_array
@@ -38,22 +38,30 @@ function FB_logs_new(F,prepro=false,SP=sieve_params(p,0.02,1.1)::Sparam) #TODO t
     @timeit to "PrePro:" begin
         if prepro 
             n,m = size(RELMat)
+            TA = transpose(A)
             @debug @info "FB_LOGS: size of RELMAT before PrePro§; size(A) = $n x $m"
-            RELMat,_ = sp_preprocessing_1(RELMat,l)
+            RELMat,TA = sp_preprocessing_1(RELMat,TA,l)
             (n,m) = size(RELMat)
-            @debug @info "FB_LOGS: size of RELMAT after PrePro§; size(A) = $n x $m"
+            @debug @info "FB_LOGS: size of RELMAT after PrePro1§; size(A) = $n x $m"
+        end
+        if prepro2
+            n,m = size(RELMat)
+            RELMat,_ = sp_preprocessing_2(RELMat,TA,l)
+            (n,m) = size(RELMat)
+            @debug @info "FB_LOGS: size of RELMAT after PrePro2§; size(A) = $n x $m"
         end
     end
     n,m = size(RELMat)
     ##########################################################################################################################################
     # get kernel
+    RELMat = change_base_ring(RR,RELMat)
     cnt = 0
     @label retour
-    @timeit to "Wiedemann" kern = wiedemann_var(RELMat,modulus_)#,storage)
+    @timeit to "Wiedemann" kern = wiedemann_var(RELMat)#,storage)
     cnt+=1
     cnt < 5 || return Dict{fmpz, fmpz}([]),Vector{fmpz_mod}([]),FactorBase(fmpz[])
     #TODO exeption if too many loops... / probably inf running time if kernel trivial
-    @debug iszero(kern) ? (@info "FB_LOGS: trivial found trivial kernel") : (@info "FB_LOGS: succeded wiedemann")
+    @debug iszero(kern) ? (@info "FB_LOGS: trivial, found trivial kernel") : (@info "FB_LOGS: succeded wiedemann")
     !iszero(kern) || @goto retour
     kern = inv(kern[1]).*kern #norm kernelvec
     ##########################################################################################################################################
@@ -107,7 +115,7 @@ end
     Indiv_Log(F,FB,FB_logs,h) -> Tuple{Dict{fmpz, fmpz}, Vector{fmpz_mod}, FactorBase{fmpz}}
 Compute the discrete logarithm $log_F.a(h)$ i.e. compute an `x` s.t. `F.a^x = h` given a Factorbase FB with corresponding logarithms in FB_logs using a #TODO sieve.
 """
-function Indiv_Log(F,FB,FB_logs,h)
+function Indiv_Log(F,FB,FB_logs,h) #TODO work on here.
     #return log_a(h) i.e x s.t a^x = h
     p = length(F.K)
     g = F.a
@@ -131,21 +139,23 @@ end
 # Testfields
 ENV["JULIA_DEBUG"] = "all" 
 p = magma_p = fmpz(100000000000000000763)
-p = cryptoprime(7)
+p = cryptoprime(5)
+ p = fmpz(p)
 TESTFIELD = BigFField(GF(p),primitive_elem(GF(p),true))
 
 SP = Sparam(2600, 1200, 1.1,(100,200))
 
 @time A,FB,FBx,l = Sieve(TESTFIELD,sieve_params(p,0.02,1.1))
-sp_preprocessing_1(A,l)
-
+using Base.Threads
+wiedemann_var_crt(A)
 N = div(p-1,2)
 RR = ResidueRing(ZZ,N)
-
-
+A = change_base_ring(RR,A)
 reset_timer!(to)
-FB_logs_new(TESTFIELD,true)
-
+@time FB_logs, FB = FB_logs_new(TESTFIELD,true,true)
+show(to)
+Indiv_Log(TESTFIELD,FB,FB_logs,123)
+check_logdict_after(TESTFIELD,D[1])
 #=
 check_logdict_after(TESTFIELD,Q[1])
 
@@ -173,4 +183,4 @@ typeof(a.data)
 
 #fmpz fast SMAt mul! 
 
-##########################################################################################################################################
+##########################################################################################################################################sh

@@ -156,7 +156,7 @@ function sp_preprocessing_5(A, TA, l) #without comparison
 end
 
 
- function sp_preprocessing_cases(A, l)#doesn't work
+function sp_preprocessing_cases(A, l)#doesn't work
     sp_unique(A)
     TA = transpose(A)
     n,m = A.r, TA.r
@@ -254,16 +254,11 @@ function sp_preprocessing(A, TA, l, i=1, zero=false)
     return A, TA
 end
 
-
+#=
 
 
 #TODO: schauen, wie Funktionen sinnnvoll zusammengesetzt werden
 #Entweder nach Fällen zweimal durchlaufen oder direkt beide Fälle je Spalte testen
-
-
-
-
-
 
 #Example matrix from Sieve
 using Markdown, Nemo
@@ -328,3 +323,4 @@ sp_preprocessing(C, 4)
 #ideas:
 #column operations in left part to produce new one entry columns
 #eliminate columns in right part that are multiples of others
+=#
