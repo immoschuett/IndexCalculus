@@ -82,7 +82,7 @@ function sp_preprocessing_1(A, TA, l) #where l denotes the length of the origina
     #TODO: A.cols anpassen
     return A, TA
 end
-function sp_preprocessing_2(A, TA, l)
+function sp_preprocessing_2_origin(A, TA, l)
     n,m = A.r, TA.r
     done = false
     while !done 
@@ -114,6 +114,29 @@ function sp_preprocessing_2(A, TA, l)
     TA = transpose(A)
     A = transpose(delete_zero_rows(TA,l+1))
     @debug sum([length(A[i]) for i = 1:A.r]) == A.nnz
+    return A, TA
+end
+function sp_preprocessing_2(A, TA, l)
+    n,m = A.r, TA.r
+    done = false
+    while !done
+        done = true
+        for j = 1:m
+            if length(TA[j]) == 2
+                done = false
+                (p,u),(q,v) = sort([(TA[j].pos[i],TA[j].values[i]) for i=1:2], by=x->length(A[x[1]]), rev=true)
+                add_scaled_col_trans!(TA, A, p, q, -divexact(v,u)) #add P to Q -> Q = Q - v/u *P
+                delete_col(TA, A, p)
+                add_scaled_row!(A, p, q, -divexact(v,u))
+                A.nnz-=length(A[p]) 
+                empty!(A[p].pos); empty!(A[p].values)
+            end
+        end 
+    end
+    A = delete_zero_rows(A)
+    TA = transpose(A)
+    A = transpose(delete_zero_rows(TA,l+1))    
+    @debug sum([length(A[i]) for i = 1:A.r]) == A.nnz  
     return A, TA
 end
 function sp_preprocessing_3(A, TA, l) #without comparison
@@ -206,7 +229,6 @@ function sp_preprocessing_cases(A, l)#doesn't work
         done = true
         for j = l+1:m
             print(j,",", length(TA[j]))
-            @assert iszero(transpose(A)-TA)
             if length(TA[j])==1 
                 done = false
                 i = TA[j].pos[1]           
@@ -244,12 +266,12 @@ end
 #TODO: schauen, wie Funktionen sinnnvoll zusammengesetzt werden
 #Entweder nach Fällen zweimal durchlaufen oder direkt beide Fälle je Spalte testen
 #Example matrix from Sieve
-#=
+
 using Markdown, Nemo
 include("Magma_sieve.jl")
 include("wiedemann.jl")
 #include("FB_logs.jl")
-p = cryptoprime(10)
+p = cryptoprime(20)
 TESTFIELD = BigFField(GF(p),primitive_elem(GF(p),true))
 SP = sieve_params(p,0.02,1.1)
 RELMat,FB,FBx,l = Sieve(TESTFIELD,SP)
@@ -257,6 +279,8 @@ p = length(TESTFIELD.K)
 modulus_ = fmpz((p-1)/2)
 RR = ResidueRing(ZZ,modulus_)
 A = change_base_ring(RR,RELMat)
+density(A)
+A,TA = sp_preprocessing_0(A,TA, l)
 density(A)
 A, TA = sp_preprocessing_1(A, TA, l)
 density(A)
@@ -307,5 +331,5 @@ sp_preprocessing(C, 4)
 #ideas:
 #column operations in left part to produce new one entry columns
 #eliminate columns in right part that are multiples of others
-=#
+
 ##########################################################################################################################################
