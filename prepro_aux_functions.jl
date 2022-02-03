@@ -1,14 +1,11 @@
-using Hecke
-
+##########################################################################################################################################
 #implemented functions I couldn't use
 function add_scaled_row!(A::SMat{T}, i::Int, j::Int, c::T) where T
     A.nnz = A.nnz - length(A[j])
     A.rows[j] = add_scaled_row(A[i], A[j], c)
     A.nnz = A.nnz + length(A[j])
     return A
-  end
-  
-
+end
 function add_scaled_col!(A::SMat{T}, i::Int, j::Int, c::T) where T #A.nnz was not adapted
     @assert c != 0
   
@@ -32,9 +29,7 @@ function add_scaled_col!(A::SMat{T}, i::Int, j::Int, c::T) where T #A.nnz was no
       end
     end
     return A
-  end
-
-
+end
 function add_scaled_col_2!(A, TA, a, b, c) #A[_,b] -> A[_,b] + c*A[_,a]    FEHLER!!!
     pos_new_b = sort(union(TA[a].pos, TA[b].pos))   #TODO: find or write function that unites sorted lists
     pos_b = TA[b].pos
@@ -53,8 +48,6 @@ function add_scaled_col_2!(A, TA, a, b, c) #A[_,b] -> A[_,b] + c*A[_,a]    FEHLE
     end
     A.nnz+=length(pos_new_b)
 end
-
-
 function add_scaled_col_trans!(A, TA, i, j, c) #A[_j]->c*A[_,i]+A[_j]
     @assert c != 0
     @assert 1 <= i <= TA.r && 1 <= j <= TA.r
@@ -73,8 +66,6 @@ function add_scaled_col_trans!(A, TA, i, j, c) #A[_j]->c*A[_,i]+A[_j]
     end
     return A
 end
-
-
 function delete_row(A, i) 
     non_zeros = length(A[i].pos)
     deleteat!(A.rows, i)
@@ -82,8 +73,6 @@ function delete_row(A, i)
     A.nnz-=non_zeros
     return A
 end
-
-
 function delete_rows(A, I, sorted=true) #elements in I need to be ascending
     if !sorted
         sort(I)
@@ -93,8 +82,6 @@ function delete_rows(A, I, sorted=true) #elements in I need to be ascending
     end
     return A
 end
-
-
 function delete_zero_rows(A, s=1) #where s denotes the first column where we wanna start
     for i=A.r:-1:s
         if A[i].pos == []
@@ -103,8 +90,6 @@ function delete_zero_rows(A, s=1) #where s denotes the first column where we wan
     end
     return A
 end
-
-
 function delete_small_rows(A, s=1)
     for i=A.r:-1:s
         if length(A[i].pos) < 2 
@@ -113,8 +98,6 @@ function delete_small_rows(A, s=1)
     end
     return A
 end
-
-
 function delete_col(A, TA, j) #only deletes entries in column j, output same size as input
     for row in TA[j].pos 
         i = findfirst(isequal(j), A[row].pos)
@@ -123,16 +106,12 @@ function delete_col(A, TA, j) #only deletes entries in column j, output same siz
     A.nnz -=length(TA[j].pos)
     return A
 end
-
-
 function delete_cols(A, TA, J)
     for j in J
         delete_col(A, TA, j)
     end
     return A
 end
-
-
 function sp_unique(A)
     out = []
     seen = Set()
@@ -150,8 +129,6 @@ function sp_unique(A)
     A.r = length(out)
     return A
 end
-
-
 function entries(A, TA, l)
     one_entry = []
     two_entries = []
@@ -179,8 +156,6 @@ function entries(A, TA, l)
     end
     return one_entry, two_entries, three_entries, four_entries, five_entries, one_row
 end 
-
-
 function cryptoprime(N)
     #return a Prime p with N digits. s.t (p-1)/2 is prime
     p = rand(fmpz(10)^(N-1):fmpz(10)^N)
@@ -189,11 +164,4 @@ function cryptoprime(N)
         !isprime(div(p-1,2)) || return p
     end 
 end 
-
-# mini examples
-RR = ResidueRing(ZZ,10)
-
-A = [RR(2) RR(0) RR(0);RR(4) RR(3) RR(0);RR(0) RR(0) RR(0);RR(0) RR(1) RR(0)]
-A = sparse_matrix(A)
-TA = transpose(A)
-add_scaled_col_trans!(A, TA, 1, 2, RR(2))
+##########################################################################################################################################

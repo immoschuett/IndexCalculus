@@ -1,8 +1,61 @@
-using Hecke, Profile 
+##########################################################################################################################################
+# Preprocessing
+#
 include("prepro_aux_functions.jl")
-
-ENV["JULIA_DEBUG"] = ""
-
+function sp_preprocessing(A, TA, l, i=1, zero=false)
+    @assert 1<=i<=5
+    if zero
+        A, TA = sp_preprocessing_0(A, TA, l)
+    end
+    A, TA = sp_preprocessing_1(A, TA, l)
+    if i == 1
+        return A, TA
+    else
+        A, TA = sp_preprocessing_2(A, TA, l)
+        if i == 2
+            return A, TA
+        else
+            A, TA = sp_preprocessing_3(A, TA, l)
+            if i == 3
+                return A, TA
+            else
+                A, TA = sp_preprocessing_4(A, TA, l)
+                if i == 4
+                    return A, TA
+                else
+                    A, TA = sp_preprocessing_5(A, TA, l)
+                    return A, TA
+                end
+            end
+        end
+    end
+    return A, TA
+end
+##########################################################################################################################################
+# Preprocessing 0-5
+function sp_preprocessing_0(A, TA, l)
+    modulus_ = modulus(base_ring(A))
+    for i=1:A.r
+        if A[i].pos[end]>l
+            e = searchsortedfirst(A[i].pos, l+1)#position of first entry on the right in pos array
+            v = A[i].values[e]
+            if v == (modulus_ - 2)
+                idx_col = A[i].pos[e] #index of col
+                for idx_row in TA[idx_col].pos
+                    print(idx_row)
+                    if idx_row!=i
+                        f = findfirst(isequal(idx_col), A[idx_row].pos) #position of this entry in row A[idx_row]
+                        w = A[idx_row].values[f]
+                        add_scaled_col_trans!(TA, A, i, idx_row, -divexact(w, v))
+                        add_scaled_row!(A, i, idx_row, -divexact(w, v))
+                    end
+                end
+            end
+        end
+    end 
+    TA = transpose(A)
+    return A, TA         
+end 
 function sp_preprocessing_1(A, TA, l) #where l denotes the length of the original factor base
     sp_unique(A)
     #TA = transpose(A)
@@ -29,10 +82,6 @@ function sp_preprocessing_1(A, TA, l) #where l denotes the length of the origina
     #TODO: A.cols anpassen
     return A, TA
 end
-
-#@profile sp_preprocessing_1(A, l)
-
-#TODO: implement further steps of structured Gauss and test efficiency
 function sp_preprocessing_2(A, TA, l)
     n,m = A.r, TA.r
     done = false
@@ -67,8 +116,6 @@ function sp_preprocessing_2(A, TA, l)
     @debug sum([length(A[i]) for i = 1:A.r]) == A.nnz
     return A, TA
 end
-
-
 function sp_preprocessing_3(A, TA, l) #without comparison
     n,m = A.r, TA.r
     done = false
@@ -94,8 +141,6 @@ function sp_preprocessing_3(A, TA, l) #without comparison
     @debug sum([length(A[i]) for i = 1:A.r]) == A.nnz  
     return A, TA
 end
-
-
 function sp_preprocessing_4(A, TA, l) #without comparison
     n,m = A.r, TA.r
     done = false
@@ -123,8 +168,6 @@ function sp_preprocessing_4(A, TA, l) #without comparison
     @debug sum([length(A[i]) for i = 1:A.r]) == A.nnz     
     return A, TA
 end
-
-
 function sp_preprocessing_5(A, TA, l) #without comparison
     n,m = A.r, TA.r
     done = false
@@ -154,8 +197,6 @@ function sp_preprocessing_5(A, TA, l) #without comparison
     @debug sum([length(A[i]) for i = 1:A.r]) == A.nnz
     return A, TA
 end
-
-
 function sp_preprocessing_cases(A, l)#doesn't work
     sp_unique(A)
     TA = transpose(A)
@@ -198,69 +239,12 @@ function sp_preprocessing_cases(A, l)#doesn't work
     A = transpose(delete_zero_rows(TA,l+1))
     return A, TA
 end
-
-function sp_preprocessing_0(A, TA, l)
-    modulus_ = modulus(base_ring(A))
-    for i=1:A.r
-        if A[i].pos[end]>l
-            e = searchsortedfirst(A[i].pos, l+1)#position of first entry on the right in pos array
-            v = A[i].values[e]
-            if v == (modulus_ - 2)
-                idx_col = A[i].pos[e] #index of col
-                for idx_row in TA[idx_col].pos
-                    print(idx_row)
-                    if idx_row!=i
-                        f = findfirst(isequal(idx_col), A[idx_row].pos) #position of this entry in row A[idx_row]
-                        w = A[idx_row].values[f]
-                        add_scaled_col_trans!(TA, A, i, idx_row, -divexact(w, v))
-                        add_scaled_row!(A, i, idx_row, -divexact(w, v))
-                    end
-                end
-            end
-        end
-    end 
-    TA = transpose(A)
-    return A, TA         
-end 
-
-
-function sp_preprocessing(A, TA, l, i=1, zero=false)
-    @assert 1<=i<=5
-    if zero
-        A, TA = sp_preprocessing_0(A, TA, l)
-    end
-    A, TA = sp_preprocessing_1(A, TA, l)
-    if i == 1
-        return A, TA
-    else
-        A, TA = sp_preprocessing_2(A, TA, l)
-        if i == 2
-            return A, TA
-        else
-            A, TA = sp_preprocessing_3(A, TA, l)
-            if i == 3
-                return A, TA
-            else
-                A, TA = sp_preprocessing_4(A, TA, l)
-                if i == 4
-                    return A, TA
-                else
-                    A, TA = sp_preprocessing_5(A, TA, l)
-                    return A, TA
-                end
-            end
-        end
-    end
-    return A, TA
-end
-
-#=
-
-
+##########################################################################################################################################
+#TODO: implement further steps of structured Gauss and test efficiency
 #TODO: schauen, wie Funktionen sinnnvoll zusammengesetzt werden
 #Entweder nach Fällen zweimal durchlaufen oder direkt beide Fälle je Spalte testen
-
 #Example matrix from Sieve
+#=
 using Markdown, Nemo
 include("Magma_sieve.jl")
 include("wiedemann.jl")
@@ -324,3 +308,4 @@ sp_preprocessing(C, 4)
 #column operations in left part to produce new one entry columns
 #eliminate columns in right part that are multiples of others
 =#
+##########################################################################################################################################
