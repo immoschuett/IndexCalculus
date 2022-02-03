@@ -120,7 +120,7 @@ function Indiv_Log(F,FB,FB_logs,h) #TODO work on here.
     p = length(F.K)
     g = F.a
     randomexp = fmpz(rand(1:p-1))
-    while !issmooth(FB,lift(h*g^randomexp))    # TODO NF-sieve or Q-sieve to find l
+    while !issmooth(FB,fmpz(lift(h*g^randomexp)))    # TODO NF-sieve or Q-sieve to find l
         randomexp = fmpz(rand(1:p-1))
     end  
     factorization = Hecke.factor(FB,lift(h*(F.a)^randomexp))
@@ -129,6 +129,7 @@ function Indiv_Log(F,FB,FB_logs,h) #TODO work on here.
     @debug (F.a^lift(log_h) == h) ? nothing : (@error "calculation of log_h failed")
     return log_h
 end 
+
 function check_logdict_after(F,D)
     for (q,d) in D
         F.a^D[q] == q || return false 
@@ -137,24 +138,20 @@ function check_logdict_after(F,D)
 end
 ##########################################################################################################################################
 # Testfields
-ENV["JULIA_DEBUG"] = "all" 
+ENV["JULIA_DEBUG"] = "" 
 p = magma_p = fmpz(100000000000000000763)
 p = cryptoprime(5)
- p = fmpz(p)
 TESTFIELD = BigFField(GF(p),primitive_elem(GF(p),true))
 
-SP = Sparam(2600, 1200, 1.1,(100,200))
-
 @time A,FB,FBx,l = Sieve(TESTFIELD,sieve_params(p,0.02,1.1))
-using Base.Threads
-wiedemann_var_crt(A)
 N = div(p-1,2)
 RR = ResidueRing(ZZ,N)
 A = change_base_ring(RR,A)
 reset_timer!(to)
-@time FB_logs, FB = FB_logs_new(TESTFIELD,true,true)
+@time FB_logs, _,FB = FB_logs_new(TESTFIELD,true,true)
 show(to)
-Indiv_Log(TESTFIELD,FB,FB_logs,123)
+@time Indiv_Log(TESTFIELD,FB,FB_logs,-121231123)
+
 check_logdict_after(TESTFIELD,D[1])
 #=
 check_logdict_after(TESTFIELD,Q[1])
