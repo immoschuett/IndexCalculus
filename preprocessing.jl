@@ -1,5 +1,5 @@
 ##########################################################################################################################################
-# Preprocessing
+# Preprocessing for SMat{fmpz_mod/nmods}
 #
 include("prepro_aux_functions.jl")
 function sp_preprocessing(A, TA, l, i=1, zero=false)
@@ -42,7 +42,6 @@ function sp_preprocessing_0(A, TA, l)
             if v == (modulus_ - 2)
                 idx_col = A[i].pos[e] #index of col
                 for idx_row in TA[idx_col].pos
-                    print(idx_row)
                     if idx_row!=i
                         f = findfirst(isequal(idx_col), A[idx_row].pos) #position of this entry in row A[idx_row]
                         w = A[idx_row].values[f]
@@ -88,7 +87,6 @@ function sp_preprocessing_2_origin(A, TA, l)
     while !done 
         done = true
         for j=l+1:m
-            iszero(transpose(A)-TA)
             if length(TA[j]) == 2
                 done = false
                 a, b = TA[j].pos #indices of rows
@@ -121,7 +119,7 @@ function sp_preprocessing_2(A, TA, l)
     done = false
     while !done
         done = true
-        for j = 1:m
+        for j = l+1:m
             if length(TA[j]) == 2
                 done = false
                 (p,u),(q,v) = sort([(TA[j].pos[i],TA[j].values[i]) for i=1:2], by=x->length(A[x[1]]), rev=true)
@@ -144,7 +142,7 @@ function sp_preprocessing_3(A, TA, l) #without comparison
     done = false
     while !done
         done = true
-        for j = 1:m
+        for j = l+1:m
             if length(TA[j]) == 3
                 done = false
                 (p,u),(q,v),(r,w) = sort([(TA[j].pos[i],TA[j].values[i]) for i=1:3], by=x->length(A[x[1]]), rev=true)
@@ -169,7 +167,7 @@ function sp_preprocessing_4(A, TA, l) #without comparison
     done = false
     while !done
         done = true
-        for j = 1:m
+        for j = l+1:m
             if length(TA[j]) == 4
                 done = false
                 (p,u),(q,v),(r,w),(s,x) = sort([(TA[j].pos[i],TA[j].values[i]) for i=1:4], by=x->length(A[x[1]]), rev=true)
@@ -196,7 +194,7 @@ function sp_preprocessing_5(A, TA, l) #without comparison
     done = false
     while !done
         done = true
-        for j = 1:m
+        for j = l+1:m
             if length(TA[j]) == 5
                 done = false
                 (p,u),(q,v),(r,w),(s,x),(t,y) = sort([(TA[j].pos[i],TA[j].values[i]) for i=1:5], by=x->length(A[x[1]]), rev=true)
@@ -220,6 +218,7 @@ function sp_preprocessing_5(A, TA, l) #without comparison
     @debug sum([length(A[i]) for i = 1:A.r]) == A.nnz
     return A, TA
 end
+#=
 function sp_preprocessing_cases(A, l)#doesn't work
     sp_unique(A)
     TA = transpose(A)
@@ -261,75 +260,9 @@ function sp_preprocessing_cases(A, l)#doesn't work
     A = transpose(delete_zero_rows(TA,l+1))
     return A, TA
 end
+=#
 ##########################################################################################################################################
 #TODO: implement further steps of structured Gauss and test efficiency
 #TODO: schauen, wie Funktionen sinnnvoll zusammengesetzt werden
 #Entweder nach Fällen zweimal durchlaufen oder direkt beide Fälle je Spalte testen
-#Example matrix from Sieve
-
-using Markdown, Nemo
-include("Magma_sieve.jl")
-include("wiedemann.jl")
-#include("FB_logs.jl")
-p = cryptoprime(20)
-TESTFIELD = BigFField(GF(p),primitive_elem(GF(p),true))
-SP = sieve_params(p,0.02,1.1)
-RELMat,FB,FBx,l = Sieve(TESTFIELD,SP)
-p = length(TESTFIELD.K)
-modulus_ = fmpz((p-1)/2)
-RR = ResidueRing(ZZ,modulus_)
-A = change_base_ring(RR,RELMat)
-density(A)
-A,TA = sp_preprocessing_0(A,TA, l)
-density(A)
-A, TA = sp_preprocessing_1(A, TA, l)
-density(A)
-A, TA = sp_preprocessing_2(A, TA, l)
-density(A)
-A, TA = sp_preprocessing_3(A, TA, l)
-density(A)
-A, TA = sp_preprocessing_4(A, TA, l)
-density(A)
-A,TA = sp_preprocessing_5(A, TA, l)
-density(A)
-A, TA = sp_preprocessing_cases(A, l)
-
-entries(A, TA, l)
-
-A, TA = sp_preprocessing_1(A, l)
-entries(A, TA, l) 
-A, TA = sp_preprocessing_2(A, TA, l)
-entries(A, TA, l)
-
-#@time wiedemann(A, modulus_)
-@time 2*3
-@time wiedemann(A, modulus_)
-@time wiedemann(sp_preprocessing_1(A, l), modulus_)
-
-
-
-# mini examples
-RR = ResidueRing(ZZ,10)
-
-A = [RR(2) RR(0) RR(0);RR(4) RR(3) RR(0);RR(0) RR(0) RR(0);RR(0) RR(1) RR(0)]
-A = sparse_matrix(A)
-TA = transpose(A)
-#delete_row(A, 1)
-delete_rows(A, [1,4])
-
-B = [RR(2) RR(0) RR(0);RR(4) RR(0) RR(0);RR(0) RR(0) RR(0);RR(0) RR(1) RR(0);RR(2) RR(0) RR(0);RR(0) RR(1) RR(0)]
-B = sparse_matrix(B)
-delete_col(B,transpose(B),1)
-delete_cols(B, transpose(B), [1,3])
-sp_unique(B)
-
-C = [3 0 2 0 0 0 0 1;0 5 0 0 1 -1 0 -2;4 0 0 0 0 0 0 -1;0 1 1 0 0 0 1 1;0 0 0 0 1 0 -2 1;0 0 0 1 0 0 0 -1;3 0 2 0 0 0 0 1]
-C = sparse_matrix(C)
-sp_preprocessing(C, 4)
-#Einträge in Zeile i löschen über A[i].pos = Int64[]; A[i].values = nmod[]
-
-#ideas:
-#column operations in left part to produce new one entry columns
-#eliminate columns in right part that are multiples of others
-
 ##########################################################################################################################################

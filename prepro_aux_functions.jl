@@ -30,23 +30,12 @@ function add_scaled_col!(A::SMat{T}, i::Int, j::Int, c::T) where T #A.nnz was no
     end
     return A
 end
-function add_scaled_col_2!(A, TA, a, b, c) #A[_,b] -> A[_,b] + c*A[_,a]    FEHLER!!!
-    pos_new_b = sort(union(TA[a].pos, TA[b].pos))   #TODO: find or write function that unites sorted lists
-    pos_b = TA[b].pos
-    val_b = TA[b].values
-    A.nnz-=length(val_b)
-    empty!(A[b].pos); empty!(A[b].values)
-    for i in pos_new_b
-        push!(A[b].pos, i)
-        if i in TA[a].pos && i in pos_b
-            push!(A[b].values, (TA[b, i]+c*TA[a, i]))
-        elseif i in TA[a].pos
-            push!(A[b].values, c*TA[a, i])
-        else
-            push!(A[b].values, TA[b, i])
-        end
+function scale_col_trans!(A, TA, j, c) #A[_j]->c*A[_,j]
+    for i in TA[j].pos
+        idx_j = findfirst(isequal(j), A[i].pos)
+        A[i].values[idx_j]*=c
     end
-    A.nnz+=length(pos_new_b)
+    return A
 end
 function add_scaled_col_trans!(A, TA, i, j, c) #A[_j]->c*A[_,i]+A[_j]
     @assert c != 0
