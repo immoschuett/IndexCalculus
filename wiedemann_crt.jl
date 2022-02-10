@@ -21,7 +21,9 @@ function wiedemann_var_crt(A::SMat{fmpz_mod}) #N::fmpz || N::Int64
 	N = modulus(RR)
 	T = fmpz
 	A = change_base_ring(ZZ, A)::SMat{T}
+	#B = deepcopy(A)
 	#A = mod_sym!(A,N)
+	#@debug change_base_ring(RR,A) == change_base_ring(RR,B) || error("as")
 	(n,m) = nrows(A),ncols(A);
     ##########################################################################################################################################
 	@debug begin 
@@ -59,32 +61,35 @@ function wiedemann_var_crt(A::SMat{fmpz_mod}) #N::fmpz || N::Int64
 	E_p = crt_env(P)
 	P2 = Int.(P) 
 	@debug t == nthreads() 
-	##########################################################################################################################################
-	ACSC = Int.(sparse(A))
-	TACSC = Int.(sparse(TA))
-	y = mul(TA, mul(A,r))
-	seq[1] = dot(randlin,c) #randlin*c 	
-	Sol = zeros(Int64,t,m)
+	#Prealloc and generate some viewarrays.
+
+
+	#Sol = Array{Int64, 2}(undef, t, m)
+	#Sol_2 = Array{Int64, 2}(undef, t, m)
 	Sol_2 = zeros(Int64,t,m)
 	#Sol_3 = zeros(fmpz,n,t)
-	Sol_3 = zeros(Int64,t,n)
+	Sol_3 = Array{Int64, 2}(undef, t, n)
+	ACSC = sparse(A)
+	TACSC = sparse(TA)
+	y = mul(TA, mul(A,r))
+	seq[1] = dot(randlin,c) #randlin*c 	
+	
+	Sol = Array{fmpz, 2}(undef, m, t)
+	zero_fmpz(Sol)
+	#Sol = zeros(fmpz,m,t)
+	Sol_prealloc = [storing_m for i=1:t] #TODO 
+
+	vertical_view = [Sol[i,:] for i = 1:m]
 	for i = 2:2*n  #Wiedemann sequence
-		#c = [c c c c]
-		c0 = deepcopy(c)
-		#Sol = LinearAlgebra.mul!(Sol,TACSC, LinearAlgebra.mul!(Sol_3,ACSC,c))
-		#Sol = transpose(Sol).%P
-		#Sol = transpose(Sol)
-		c = transpose([c c c c])  # TODO to t times h or c-cat 
-		#inplace_conv2int(Sol_2,Sol).%P2
-		Sol = Int.(c.%P2)
-		Sol_2 = LinearAlgebra.mul!(Sol_2,LinearAlgebra.mul!(Sol_3,Sol,TACSC),ACSC) #TODO with Int64 inplace modular here
-		#Sol = Sol.%P2
+		for i = 1:t
+			c = c.%P[i]	
+			Sol[:,i] = LinearAlgebra.mul!(Sol[:,i],TACSC, LinearAlgebra.mul!(storing_n,ACSC,c)).%P[i]
 		#c = multact!(c,TA,(mulact!(storing,A,c,zero!(RR),st)),zero(RR),st) # generate sequence
-		Sol = fmpz.(Sol_2)
-		#Sol = inplace_conv2fmpz(Sol,Sol_2)
-		c = [ crt(Sol[:,i],E_p) for i in 1:m ].%N    # do this inplace here
-		#@debug c == mul(TA,mul(A,c0)) ? nothing : (@error "SEQ_wrong at $i" ,break)
-		seq[i] = dot(randlin,c)  #eleminates
+		end 
+		c = [ crt(Sol[i,:],P) for i in 1:m ]
+		c = c.%prod(P)
+		c = c.%N
+		seq[i] = dot(randlin,c).%N  #eleminates
 	end
     ##########################################################################################################################################
 	seq = RR.(seq)
@@ -241,12 +246,16 @@ function inplace_conv2fmpz(v::Vector{fmpz},w::Vector{Int64}) # if small
 	end 
 	return v
 end 
-function inplace_conv2fmpz(v::Matrix{fmpz},w::Matrix{Int64},size) # if small
-	for i = 1:size[1]
-		for j = 1:size[2]
-			v[i,j].d = w[i,j]
-			println(v[i,j])
-		end
+
+function zero_fmpz(v::Matrix{fmpz})
+	for i = 1:length(v)
+		v[i] = 0
+	end 
+end
+
+function inplace_conv2fmpz(v::Matrix{fmpz},w::Matrix{Int64}) # if small
+	for i = 1:length(w)
+		v[i].d = w[i]
 	end 
 	return v
 end 
@@ -325,3 +334,14 @@ function inplace_conv2fmpz(v::Matrix{fmpz},w::Matrix{Int64}) # if small
 	end
  	return v
 end 
+
+
+A = zeros(10000, 10000)
+@time @views for row in 1:3
+        b = A[row, :]
+        b[:] .= row
+end
+
+@time a = @view A[1,:]
+
+a[1]===A[1,1]
