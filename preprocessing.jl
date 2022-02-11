@@ -2,7 +2,7 @@
 # Preprocessing for SMat{fmpz_mod/nmods}
 #
 include("prepro_aux_functions.jl")
-function sp_preprocessing(A, TA, l, i=1, zero=false)
+function sp_preprocessing(A::SMat{T}, TA::SMat{T}, l, i=1, zero=false) where T <: Union{fmpz_mod, nmod}
     @assert 1<=i<=5
     if zero
         A, TA = sp_preprocessing_0(A, TA, l)
@@ -33,7 +33,7 @@ function sp_preprocessing(A, TA, l, i=1, zero=false)
 end
 ##########################################################################################################################################
 # Preprocessing 0-5
-function sp_preprocessing_0(A, TA, l)
+function sp_preprocessing_0(A::SMat{T}, TA::SMat{T}, l) where T <: Union{fmpz_mod, nmod}
     modulus_ = modulus(base_ring(A))
     for i=1:A.r
         if A[i].pos[end]>l
@@ -55,7 +55,7 @@ function sp_preprocessing_0(A, TA, l)
     TA = transpose(A)
     return A, TA         
 end 
-function sp_preprocessing_1(A, TA, l) #where l denotes the length of the original factor base
+function sp_preprocessing_1(A::SMat{T}, TA::SMat{T}, l) where T <: Union{fmpz_mod, nmod}
     sp_unique(A)
     #TA = transpose(A)
     n,m = A.r, TA.r
@@ -81,7 +81,7 @@ function sp_preprocessing_1(A, TA, l) #where l denotes the length of the origina
     #TODO: A.cols anpassen
     return A, TA
 end
-function sp_preprocessing_2_origin(A, TA, l)
+function sp_preprocessing_2_origin(A::SMat{T}, TA::SMat{T}, l) where T <: Union{fmpz_mod, nmod}
     n,m = A.r, TA.r
     done = false
     while !done 
@@ -114,7 +114,7 @@ function sp_preprocessing_2_origin(A, TA, l)
     @debug sum([length(A[i]) for i = 1:A.r]) == A.nnz
     return A, TA
 end
-function sp_preprocessing_2(A, TA, l)
+function sp_preprocessing_2(A::SMat{T}, TA::SMat{T}, l) where T <: Union{fmpz_mod, nmod}
     n,m = A.r, TA.r
     done = false
     while !done
@@ -137,7 +137,7 @@ function sp_preprocessing_2(A, TA, l)
     @debug sum([length(A[i]) for i = 1:A.r]) == A.nnz  
     return A, TA
 end
-function sp_preprocessing_3(A, TA, l) #without comparison
+function sp_preprocessing_3(A::SMat{T}, TA::SMat{T}, l) where T <: Union{fmpz_mod, nmod}
     n,m = A.r, TA.r
     done = false
     while !done
@@ -162,7 +162,7 @@ function sp_preprocessing_3(A, TA, l) #without comparison
     @debug sum([length(A[i]) for i = 1:A.r]) == A.nnz  
     return A, TA
 end
-function sp_preprocessing_4(A, TA, l) #without comparison
+function sp_preprocessing_4(A::SMat{T}, TA::SMat{T}, l) where T <: Union{fmpz_mod, nmod}
     n,m = A.r, TA.r
     done = false
     while !done
@@ -189,7 +189,7 @@ function sp_preprocessing_4(A, TA, l) #without comparison
     @debug sum([length(A[i]) for i = 1:A.r]) == A.nnz     
     return A, TA
 end
-function sp_preprocessing_5(A, TA, l) #without comparison
+function sp_preprocessing_5(A::SMat{T}, TA::SMat{T}, l) where T <: Union{fmpz_mod, nmod}
     n,m = A.r, TA.r
     done = false
     while !done

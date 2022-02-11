@@ -2,7 +2,7 @@
 # Preprocessing for SMat{fmpz} assuming the fmpz are symmetric
 #
 include("prepro_aux_functions.jl")
-function sp_preprocessing_fmpz(A, TA, l, i=1, zero=false)
+function sp_preprocessing(A::SMat{T}, TA::SMat{T}, l, i=1, zero=false) where T <: Union{fmpz, Integer}
     @assert 1<=i<=5
     if zero
         A, TA = sp_preprocessing_0(A, TA, l)
@@ -11,7 +11,7 @@ function sp_preprocessing_fmpz(A, TA, l, i=1, zero=false)
     if i == 1
         return A, TA
     else
-        A, TA = sp_preprocessing_2(A, TA, l)
+        A, TA = sp_preprocessing_2__origin(A, TA, l)
         if i == 2
             return A, TA
         else
@@ -33,7 +33,7 @@ function sp_preprocessing_fmpz(A, TA, l, i=1, zero=false)
 end
 ##########################################################################################################################################
 # Preprocessing 0-5
-function sp_preprocessing_0(A, TA, l)
+function sp_preprocessing_0(A::SMat{T}, TA::SMat{T}, l) where T <: Union{fmpz, Integer}
     for i=1:A.r
         if A[i].pos[end]>l
             e = searchsortedfirst(A[i].pos, l+1)#position of first entry on the right in pos array
@@ -56,7 +56,7 @@ function sp_preprocessing_0(A, TA, l)
     TA = transpose(A)
     return A, TA         
 end 
-function sp_preprocessing_1(A, TA, l) #where l denotes the length of the original factor base
+function sp_preprocessing_1(A::SMat{T}, TA::SMat{T}, l) where T <: Union{fmpz, Integer}
     sp_unique(A)
     #TA = transpose(A)
     n,m = A.r, TA.r
@@ -82,7 +82,7 @@ function sp_preprocessing_1(A, TA, l) #where l denotes the length of the origina
     #TODO: A.cols anpassen
     return A, TA
 end
-function sp_preprocessing_2_origin(A, TA, l)
+function sp_preprocessing_2_origin(A::SMat{T}, TA::SMat{T}, l) where T <: Union{fmpz, Integer}
     n,m = A.r, TA.r
     done = false
     while !done 
@@ -119,7 +119,7 @@ function sp_preprocessing_2_origin(A, TA, l)
     @debug sum([length(A[i]) for i = 1:A.r]) == A.nnz
     return A, TA
 end
-function sp_preprocessing_2(A, TA, l)
+function sp_preprocessing_2(A::SMat{T}, TA::SMat{T}, l) where T <: Union{fmpz, Integer}
     n,m = A.r, TA.r
     done = false
     while !done
@@ -144,7 +144,7 @@ function sp_preprocessing_2(A, TA, l)
     @debug sum([length(A[i]) for i = 1:A.r]) == A.nnz  
     return A, TA
 end
-function sp_preprocessing_3(A, TA, l) #without comparison
+function sp_preprocessing_3(A::SMat{T}, TA::SMat{T}, l) where T <: Union{fmpz, Integer}
     n,m = A.r, TA.r
     done = false
     while !done
@@ -173,7 +173,7 @@ function sp_preprocessing_3(A, TA, l) #without comparison
     @debug sum([length(A[i]) for i = 1:A.r]) == A.nnz  
     return A, TA
 end
-function sp_preprocessing_4(A, TA, l) #without comparison
+function sp_preprocessing_4(A::SMat{T}, TA::SMat{T}, l) where T <: Union{fmpz, Integer}
     n,m = A.r, TA.r
     done = false
     while !done
@@ -206,7 +206,7 @@ function sp_preprocessing_4(A, TA, l) #without comparison
     @debug sum([length(A[i]) for i = 1:A.r]) == A.nnz     
     return A, TA
 end
-function sp_preprocessing_5(A, TA, l) #without comparison
+function sp_preprocessing_5(A::SMat{T}, TA::SMat{T}, l) where T <: Union{fmpz, Integer}
     n,m = A.r, TA.r
     done = false
     while !done
@@ -242,4 +242,4 @@ function sp_preprocessing_5(A, TA, l) #without comparison
     A = transpose(delete_zero_rows(TA,l+1))      
     @debug sum([length(A[i]) for i = 1:A.r]) == A.nnz
     return A, TA
-end
+end 
