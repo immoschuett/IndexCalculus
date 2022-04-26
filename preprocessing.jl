@@ -266,7 +266,7 @@ end
 #TODO: schauen, wie Funktionen sinnnvoll zusammengesetzt werden
 #Entweder nach Fällen zweimal durchlaufen oder direkt beide Fälle je Spalte testen
 #Example matrix from Sieve
-
+#=
 using Markdown, Nemo
 include("Magma_sieve.jl")
 include("wiedemann.jl")
@@ -333,3 +333,5 @@ sp_preprocessing(C, 4)
 #eliminate columns in right part that are multiples of others
 
 ##########################################################################################################################################
+
+=#

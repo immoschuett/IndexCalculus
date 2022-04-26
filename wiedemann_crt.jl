@@ -89,6 +89,7 @@ function wiedemann_var_crt(A::SMat{fmpz_mod}) #N::fmpz || N::Int64
 		c = [ crt(Sol[i,:],P) for i in 1:m ]
 		c = c.%prod(P)
 		c = c.%N
+		#TODO warning hier noch pos Restsystem.
 		seq[i] = dot(randlin,c).%N  #eleminates
 	end
     ##########################################################################################################################################
@@ -185,9 +186,15 @@ function dot!(s::fmpz_mod, sr::SRow{fmpz_mod}, a::Vector{fmpz_mod})
     return s
 end
 # some more in external test documents.
-
+# badge smoothtest ? 
+# Type x::Union{fmpz,Int64,Float64} possible ()
+# SMat{T} where T <: Union{...}
+#  Achtung mod 5 und mod 2,3 ---> immer positives Restsystem haben...!!!
 #a = fpmz(4)
 #a.d 
+# crt!(res::T, b::Vector{T}, a::crt_env{T})
+#  pohlig_hellman(g, n, h; factor_n=factor(n)) -> fmpz   use this 
+#
 #typeof(a.d)
 # all boundet by 2^62 -1 if positiv (Int64 negative will result in 1 at 2nd bit) as negative Int64 architecture
 #mum prepro... ()  bounded by 2^ * ?  possible.
@@ -345,3 +352,14 @@ end
 @time a = @view A[1,:]
 
 a[1]===A[1,1]
+
+
+A = [fmpz(3) fmpz(3); fmpz(1) fmpz(10)]
+a = @view A[1,:]
+supertype(typeof(a))
+
+
+#-div Hecke 
+# -editierbare Version
+
+# Package Add Hecke dev.

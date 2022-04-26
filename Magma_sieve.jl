@@ -59,9 +59,23 @@ function sieve_params(p,eps::Float64,ratio::Float64)
 
 	qlimit = ceil(0.5*max(qlimit,30))
 	climit = ceil(max(climit,35))
-	steps = (100,100)
+	steps = (0,100)
 	return Sparam(qlimit,climit,ratio,steps)
 end
+function sieve_params2(q_ratio,p,eps::Float64,ratio::Float64)
+	#TODO more analysis and optimization of Sieve Params
+
+	# assymtotic bounds by Coppersmith, Odlyzko, and Schroeppel L[p,1/2,1/2]# L[n,\alpha ,c]=e^{(c+o(1))(\ln n)^{\alpha }(\ln \ln n)^{1-\alpha }}}   for c=1
+	qlimit = exp((0.5* sqrt(log(p)*log(log(p)))))
+	qlimit *= log(qlimit) # since aproximately    #primes
+	climit = exp((0.5+eps)*sqrt(log(p)*log(log(p))))
+
+	qlimit = ceil(q_ratio*max(qlimit,30))
+	climit = ceil(max(climit,35))
+	steps = (0,300)
+	return Sparam(qlimit,climit,ratio,steps)
+end
+
 function set_sieve_params(q::Int64,c::Int64,r::Float64,i::Tuple{Int64, Int64})
     #later some stuff here
     return Sparam(q,c,r,i)
@@ -135,7 +149,7 @@ function Sieve(F::BigFField,sieveparams::Sparam)
         idx = 0
         for c2 in 1:length(sieve)
             n = rel % p
-            if abs(sieve[c2] - floor(log(Int(n))/log2)) < 1 #TODO
+            if abs(sieve[c2] - (nbits(n)-1)) < 1 #TODO nbits(n)+1
                 # TODO insert default factorbase algorithm
                 #FBs = FactorBase(FB) #generate Factorbas from updated FBs with new c_i´s
                 if issmooth(FBs,fmpz(n))
@@ -153,22 +167,22 @@ function Sieve(F::BigFField,sieveparams::Sparam)
                     end#(FB = vcat(FB,[H + c2]))
                     #Include relation (H + c1)*(H + c2) = fact.
                     #row = nrows(A) + 1 # insert new relation (new row)to sparse_matrix
-                    J1 = Vector{Int}([])
-                    V = Vector{fmpz}([])
+                    J1 = Vector{Int64}([])
+                    V = Vector{Int64}([])
                     for (prime,power) in dict_factors
                         if !(power == 0)
                             push!(J1,Indx[prime])
-                            push!(V,power)
+                            push!(V,Int(power))
                         end
                     end
                     if c1 == c2
                          push!(J1,Indx[H+c1])
-                         push!(V,fmpz(-2))
+                         push!(V,-2)
                     else
                          push!(J1,Indx[H+c1])
                          push!(J1,Indx[H+c2])
-                         push!(V,fmpz(-1))
-                         push!(V,fmpz(-1))
+                         push!(V,-1)
+                         push!(V,-1)
                     end
                     push!(A,sparse_row(ZZ, J1, V))
                 end
@@ -188,6 +202,7 @@ function Sieve(F::BigFField,sieveparams::Sparam)
 		return Sieve(F,sieveparams)
 	end
     @debug check_relation_mat(F.K,A,FB) ? (@info "SIEVE: all Relations in Matrix correct") : (@error "SIEVE: Relation Matrix wrong")
+    @info "SIEVE_params:", sieveparams
     return A,FBs,FB,l
 end
 ##########################################################################################################################################
