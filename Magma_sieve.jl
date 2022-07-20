@@ -241,10 +241,3 @@ function verify_primitive_elem(elem,K)
 end
 ##########################################################################################################################################
 
-
-ENV["JULIA_DEBUG"] = "" 
-p = magma_p = fmpz(100000000000000000763)
-p = cryptoprime(15)
-TESTFIELD = BigFField(GF(p),primitive_elem(GF(p),true))
-
-Sieve(TESTFIELD,r_sieve_params(P,p))

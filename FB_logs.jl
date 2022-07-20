@@ -14,7 +14,7 @@ ENV["JULIA_DEBUG"] = "all" # enable debugging = "all" , disable:  = ""
     FB_logs(F::FField,storage=false) -> Tuple{Dict{fmpz, fmpz}, Vector{fmpz_mod}, FactorBase{fmpz}}
 Compute a  `Factorbase` and a Dict of its `discrete logarithms` using a Indexcalculus algorithm.
 """
-function FB_logs(F,prepro::Tuple{Bool, Bool, Int64},SP=sieve_params(p,0.0,0.1,1.1,(Float64,1.0))::Sparam) #TODO this function for an FField
+function FB_logs(F,prepro=(true,true,5)::Tuple{Bool, Bool, Int64},SP=sieve_params(p,0.0,0.1,1.1,(Float64,1.0))::Sparam) #TODO this function for an FField
     ##########################################################################################################################################
     @timeit to "FB_logs_total" begin
     #for F FField find FB,FB_logs,FB_array

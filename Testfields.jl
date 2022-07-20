@@ -108,3 +108,16 @@ plot(L0,D,
 
 
 =#
+
+
+##########################################################################################################################################
+# Example:
+#=
+ENV["JULIA_DEBUG"] = "" 
+p = magma_p = fmpz(100000000000000000763)
+p = cryptoprime(15)
+TESTFIELD = BigFField(GF(p),primitive_elem(GF(p),true))
+
+FB_logs(TESTFIELD)
+Sieve(TESTFIELD,r_sieve_params(P,p))
+=#
