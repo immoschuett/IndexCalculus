@@ -23,7 +23,7 @@ function wiedemann_var(A::SMat{nmod}) #N::fmpz || N::Int64
 	##########################################################################################################################################
 
     #Wiedemann sequence
-    # solve A^tAx = y2 => x -y in kernel(A^tA) to avoid finding zero vec
+    # solve A^tAx = A^tAr = y  => x -r in kernel(A^tA) to avoid finding zero vec
 	y = Hecke.mul!(storing_m,TA, Hecke.mul!(storing_n,A,r))
 	seq[1] = dot(randlin,c,zero!(z)) #randlin*c 		
 	for i = 2:2*n  #Wiedemann sequence
@@ -99,7 +99,7 @@ function wiedemann_var(A::SMat{fmpz_mod}) #N::fmpz || N::Int64
 		degr = degree(f)
 		@info "WIEDEMANN: deg f = $degr where size(A^t*A) = $m"
 		typeof(f) != fmpz || (@warn "ERLEKAMP_MASSEY: f may be constant polynom")
-		done || (@warn "ERLEKAMP_MASSEY: modulus N is not prime, TODO: still catch some gcds")
+		done || (@warn "BERLEKAMP_MASSEY: modulus N is not prime, TODO: still catch some gcds")
 		iszero(f(Matrix(TA)*Matrix(A))) ? (@info "BERLEKAMP_MASSEY: valid return") : (@error "BERLEKAMP_MASSEY: unexpected return")
 		#note that second case appears only for debugging storage.(since sequence beginss with A*r)
 	end
@@ -215,23 +215,4 @@ function dot_experimental!(s::fmpz_mod, sr::SRow{fmpz_mod}, a::Vector{fmpz_mod},
     mod!(s.data, s.data, m)
     return s
 end
-#=
-function multi!(c::Vector{fmpz_mod}, A::SMat{fmpz_mod}, b::Vector{fmpz_mod}) where T
-    for (i, r) in enumerate(A)
-      c[i] = dot!(c[i],r,b)
-    end
-    return c
-end
-##dot fmpz_mod
-function dot!(s::fmpz_mod, sr::SRow{fmpz_mod}, a::Vector{fmpz_mod})
-    m = modulus(parent(s))
-    zero!(s.data)
-    t = fmpz()
-    for (i,v) = sr
-      Hecke.mul!(t, v.data, a[i].data)
-      Hecke.add!(s.data, s.data, t)
-    end
-    mod!(s.data, s.data, m)
-    return s
-end
-=#
+

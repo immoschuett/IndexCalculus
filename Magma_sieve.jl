@@ -86,7 +86,8 @@ function Sieve(F::BigFField,sieveparams::Sparam)
     #FB[findfirst(isequal(lift(alpha))] FB[1] = lift(alpha), FB[]
     indx = findfirst(isequal(lift(F.a)),fb_primes)
     FB = vcat([lift(F.a)],deleteat!(fb_primes,indx)) # tauschen a[1] = a[2] , a[2] = [1] 
-    # use shift! / unshift! here...
+    # WARNING here.   a \notin fb_primes anymore. ---> Hotfix
+    fb_primes = deepcopy(FB) # now in right order.
     log2 = log(2.0);
     logqs = sieveparams.prec[1].([log(Int(q))/log2 for q in FB]) #real logarithms for sieve 
     FBs = deepcopy(FactorBase(FB))
@@ -239,3 +240,11 @@ function verify_primitive_elem(elem,K)
     return true
 end
 ##########################################################################################################################################
+
+
+ENV["JULIA_DEBUG"] = "" 
+p = magma_p = fmpz(100000000000000000763)
+p = cryptoprime(15)
+TESTFIELD = BigFField(GF(p),primitive_elem(GF(p),true))
+
+Sieve(TESTFIELD,r_sieve_params(P,p))
