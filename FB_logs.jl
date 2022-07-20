@@ -14,7 +14,7 @@ ENV["JULIA_DEBUG"] = "all" # enable debugging = "all" , disable:  = ""
     FB_logs(F::FField,storage=false) -> Tuple{Dict{fmpz, fmpz}, Vector{fmpz_mod}, FactorBase{fmpz}}
 Compute a  `Factorbase` and a Dict of its `discrete logarithms` using a Indexcalculus algorithm.
 """
-function FB_logs_new(F,prepro::Tuple{Bool, Bool, Int64},SP=sieve_params(p,0.02,1.1)::Sparam) #TODO this function for an FField
+function FB_logs(F,prepro::Tuple{Bool, Bool, Int64},SP=sieve_params(p,0.0,0.1,1.1,(Float64,1.0))::Sparam) #TODO this function for an FField
     ##########################################################################################################################################
     @timeit to "FB_logs_total" begin
     #for F FField find FB,FB_logs,FB_array
@@ -53,7 +53,7 @@ function FB_logs_new(F,prepro::Tuple{Bool, Bool, Int64},SP=sieve_params(p,0.02,1
     # get kernel
     cnt = 0
     @label retour
-    @timeit to "Wiedemann" kern = wiedemann_var(RELMat)#,storage)
+    @timeit to "Wiedemann:" kern = wiedemann_var(RELMat)#,storage)
     cnt+=1
     cnt < 5 || return Dict{fmpz, fmpz}([]),Vector{fmpz_mod}([]),FactorBase(fmpz[])
     #TODO exeption if too many loops... / probably inf running time if kernel trivial
@@ -91,6 +91,7 @@ function FB_logs_new(F,prepro::Tuple{Bool, Bool, Int64},SP=sieve_params(p,0.02,1
     return Logdict,kern,FactorBase(Q)
     end
 end
+
 ##########################################################################################################################################
 # Aux functions
 function check_logdict(F,D,Q)
@@ -133,76 +134,3 @@ function check_logdict_after(F,D)
     return true 
 end
 ##########################################################################################################################################
-# Testfields
-ENV["JULIA_DEBUG"] = "" 
-p = magma_p = fmpz(100000000000000000763)
-p = cryptoprime(30)
-TESTFIELD = BigFField(GF(p),primitive_elem(GF(p),true))
-
-reset_timer!(to)
-@time @inbounds FB_logs, _,FB = FB_logs_new(TESTFIELD,(true,true,5),sieve_params2(0.23,p,0.07,1.02))
-l = length(FB_logs);
-show(to)
-println("length of found FB: $l")
-
-sieve_params2(0.3,p,0.12,1.1) #194s
-sieve_params2(0.4,p,0.12,1.1) #120s
-sieve_params2(0.4,p,0.08,1.1)  # 70s
-sieve_params2(0.37,p,0.08,1.1) #79s
-sieve_params2(0.3,p,0.08,1.1) #125 30/70s
-sieve_params2(0.27,p,0.08,1.05) #125 30/70s
-sieve_params2(0.3,p,0.08,1.05) # 100 small
-
-
-sieve_params2(0.23,p,0.07,1.02) # 100 small
-@time A,B,C = Sieve(TESTFIELD,sieve_params2(0.23,p,0.07,1.02))
-
-@time l = Indiv_Log(TESTFIELD,FB,FB_logs,336774605675107)
-TESTFIELD.a^l
-
-check_logdict_after(TESTFIELD,A)
-
-ENV["JULIA_DEBUG"] = ""
-p = cryptoprime(10)
-TESTFIELD = BigFField(GF(p),primitive_elem(GF(p),true))
-
-@profile (@debug @info "ok")
-@time FB_logs(TESTFIELD,false)
-
-@profile Sieve(TESTFIELD,SP)
-
-Profile.clear() 
-@profile Sieve(TESTFIELD,SP)
-Profile.print(format= :flat, sortedby = :count, C = !true)
-#Profile.print(sortedby = :count, C = !true)
-
-#include("C:\\Users\\immos\\Documents\\Git\\Fachpraktikum\\IndexCalculus\\FB_logs.jl")
-
-RR = ResidueRing(ZZ,fmpz(2))
-a = RR(2)
-
-typeof(a.data)
-
-
-#fmpz fast SMAt mul! 
-
-##########################################################################################################################################sh
-#--trace Alloc. 
-#max(abs(A))
-# Achtung -> symetrisches Restsystem. A 
-#mod_sym!() SMat inplay ins symetrische Restsystem   Dann max_abs(Matrix)
-#...
-
-
-#=
-PRESENTATION:
-
-ENV["JULIA_DEBUG"] = "" 
-p = magma_p = fmpz(100000000000000000763)
-p = cryptoprime(23)
-TESTFIELD = BigFField(GF(p),primitive_elem(GF(p),true))
-
-reset_timer!(to)
-@time @inbounds FB_logs, _,FB = FB_logs_new(TESTFIELD,(true,true,5),sieve_params2(0.3,p,0.07,1.05))
-
-=#

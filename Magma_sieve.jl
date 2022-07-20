@@ -1,5 +1,4 @@
 ##########################################################################################################################################
-revise()
 #Types
 @doc Markdown.doc"""
     abstract type DLP
@@ -46,39 +45,28 @@ mutable struct Sparam<:DLP
 	climit::Int64
 	ratio::Float64
 	inc::Tuple{Int64, Int64} #for increasing of Sparam
+    prec::Tuple{T,Float64} where T
 end
 ##########################################################################################################################################
-#Types 2
-function sieve_params(p,eps::Float64,ratio::Float64)
-	#TODO more analysis and optimization of Sieve Params
-
-	# assymtotic bounds by Coppersmith, Odlyzko, and Schroeppel L[p,1/2,1/2]# L[n,\alpha ,c]=e^{(c+o(1))(\ln n)^{\alpha }(\ln \ln n)^{1-\alpha }}}   for c=1
-	qlimit = exp((0.5* sqrt(log(p)*log(log(p)))))
-	qlimit *= log(qlimit) # since aproximately    #primes
+#Parameters
+function sieve_params(p,alpha::Float64,eps::Float64,ratio::Float64,prec=(Float64,1.0)::Tuple{T,Float64}) where T
+	# assymtotic bounds by Coppersmith, Odlyzko, and Schroeppel L[p,1/2,1/2] # L[n,\alpha ,c]=e^{(c+o(1))(\ln n)^{\alpha }(\ln \ln n)^{1-\alpha }}}   for c= 1/2
+	qlimit = exp(((0.5+alpha)*sqrt(log(p)*log(log(p)))))
+	qlimit *= log(qlimit) # by prime number thm. ->  #primes
 	climit = exp((0.5+eps)*sqrt(log(p)*log(log(p))))
-
-	qlimit = ceil(0.5*max(qlimit,30))
+	qlimit = ceil(max(qlimit,30))
 	climit = ceil(max(climit,35))
-	steps = (0,100)
-	return Sparam(qlimit,climit,ratio,steps)
+	steps = (0,500)     # enlarge sieve 
+	return Sparam(qlimit,climit,ratio,steps,prec)
 end
-function sieve_params2(q_ratio,p,eps::Float64,ratio::Float64)
-	#TODO more analysis and optimization of Sieve Params
-
-	# assymtotic bounds by Coppersmith, Odlyzko, and Schroeppel L[p,1/2,1/2]# L[n,\alpha ,c]=e^{(c+o(1))(\ln n)^{\alpha }(\ln \ln n)^{1-\alpha }}}   for c=1
-	qlimit = exp((0.5* sqrt(log(p)*log(log(p)))))
-	qlimit *= log(qlimit) # since aproximately    #primes
-	climit = exp((0.5+eps)*sqrt(log(p)*log(log(p))))
-
-	qlimit = ceil(q_ratio*max(qlimit,30))
-	climit = ceil(max(climit,35))
-	steps = (0,300)
-	return Sparam(qlimit,climit,ratio,steps)
-end
-
-function set_sieve_params(q::Int64,c::Int64,r::Float64,i::Tuple{Int64, Int64})
-    #later some stuff here
-    return Sparam(q,c,r,i)
+const P = Dict(zip([i for i = 5:19],[(0.2,0.3),(0.15,0.25),(0.1,0.2),(0.07,0.15),(0.05,0.12),(0.03,0.1),(0.02,0.09),(0.015,0.08),(0.014,0.06),(0.012,0.05),(0.01,0.03),(0.002,0.03),(0.002,0.02),(0.001,0.02),(0.001,0.02)])) :: Dict{Int64, Tuple{Float64, Float64}}
+function sieve_params_experimental(q_limit::Int64,c_limit::Int64,ratio::Float64,prec=(Float16,1.0))
+    return Sparam(q_limit,c_limit,ratio,(0,5),prec)
+end 
+function r_sieve_params(P,p)
+    p < fmpz(2^63 -1) || (@error "p > typemax(Int64)")
+    base10 = Int(ceil(log10(Int(p))))
+    return sieve_params(p,P[base10][1],P[base10][2],1.01,(Float64,1.0))
 end 
 ##########################################################################################################################################
 #Sieve
@@ -100,7 +88,7 @@ function Sieve(F::BigFField,sieveparams::Sparam)
     FB = vcat([lift(F.a)],deleteat!(fb_primes,indx)) # tauschen a[1] = a[2] , a[2] = [1] 
     # use shift! / unshift! here...
     log2 = log(2.0);
-    logqs = [log(Int(q))/log2 for q in FB] #real logarithms for sieve 
+    logqs = sieveparams.prec[1].([log(Int(q))/log2 for q in FB]) #real logarithms for sieve 
     FBs = deepcopy(FactorBase(FB))
     l2 = length(FB)
     l = deepcopy(l2)
@@ -149,7 +137,7 @@ function Sieve(F::BigFField,sieveparams::Sparam)
         idx = 0
         for c2 in 1:length(sieve)
             n = rel % p
-            if abs(sieve[c2] - (nbits(n)-1)) < 1 #TODO nbits(n)+1
+            if abs(sieve[c2] - (nbits(n)-1)) < sieveparams.prec[2] #TODO nbits(n)+1
                 # TODO insert default factorbase algorithm
                 #FBs = FactorBase(FB) #generate Factorbas from updated FBs with new c_i´s
                 if issmooth(FBs,fmpz(n))
@@ -193,7 +181,7 @@ function Sieve(F::BigFField,sieveparams::Sparam)
     ##########################################################################################################################################
     #increase Sieve 
     # IDEA: reuse already given Sieve vec. and only sieve for new c_i (otherwise exp waste of time)
-    # still TODO
+    # TODO: dynamic sieving
     if nrows(A)/length(FB) < sieveparams.ratio
         @debug @info "SIEVE: increase sieveparams"
 		#TODO global counter here for optimization of sieveparams
@@ -203,6 +191,7 @@ function Sieve(F::BigFField,sieveparams::Sparam)
 	end
     @debug check_relation_mat(F.K,A,FB) ? (@info "SIEVE: all Relations in Matrix correct") : (@error "SIEVE: Relation Matrix wrong")
     @info "SIEVE_params:", sieveparams
+    #return sieveparams # for experimental loops only
     return A,FBs,FB,l
 end
 ##########################################################################################################################################
@@ -224,7 +213,7 @@ function check_relation_mat(K,A,FB)
     return true
 end
 function primitive_elem(K::FinField,first::Bool) #TODO implement compatible for Abstract field or Nemo.GaloisfmpzField
-    #returns a (the first) generator alpha of K° s.t. lift(alpha) is prime in ZZ
+    #returns a (if first the first) generator alpha of K° s.t. lift(alpha) is prime in ZZ
     p = length(K)
     Fact = prime_divisors(fmpz(p-1))
     while true # alpha exists
@@ -250,9 +239,3 @@ function verify_primitive_elem(elem,K)
     return true
 end
 ##########################################################################################################################################
-# Comments
-#TODO instead invcrease steps. 
-#use @goto increase c limit 
-# dont sieve again all this stuff.
-#dynamic sieving. 
-#write expanding iterator 
